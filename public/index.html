@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LUBIA | INGELUBSA S.A.S.</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #F8FAFC;
+      color: #111827;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────── */
+    .header {
+      background: #111827;
+      border-bottom: 4px solid #EAB308;
+      padding: 0;
+    }
+    .header-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 24px;
+    }
+    .header-logo {
+      display: flex; align-items: center; gap: 12px;
+      color: white; text-decoration: none;
+    }
+    .header-logo img { height: 40px; }
+    .header-logo-text { font-size: 14px; color: #9CA3AF; }
+    .header-logo-text strong { color: #EAB308; font-size: 22px; display: block; }
+    .header-info { color: #9CA3AF; font-size: 13px; text-align: right; }
+
+    /* ── Main ──────────────────────────── */
+    .main { max-width: 1200px; margin: 32px auto; padding: 0 24px; }
+
+    /* ── Top bar ───────────────────────── */
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px;
+    }
+    .topbar h1 { font-size: 28px; color: #111827; }
+    .topbar h1 span { color: #EAB308; }
+
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 10px;
+      font-weight: 600; font-size: 14px; cursor: pointer;
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: #EAB308; color: #111827; }
+    .btn-primary:hover { background: #FACC15; transform: scale(1.03); }
+    .btn-outline { background: white; color: #111827; border: 2px solid #EAB308; }
+    .btn-outline:hover { background: #FEF3C7; }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+    .btn-green { background: #22C55E; color: white; }
+    .btn-green:hover { background: #16A34A; }
+    .btn-red { background: #EF4444; color: white; }
+
+    /* ── Project grid ──────────────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: white; border-radius: 14px; padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 2px solid #E5E7EB;
+      transition: all 0.2s; cursor: pointer;
+    }
+    .card:hover { border-color: #EAB308; box-shadow: 0 4px 20px rgba(234,179,8,0.15); transform: translateY(-2px); }
+    .card-icon { font-size: 32px; margin-bottom: 12px; }
+    .card h3 { font-size: 17px; margin-bottom: 8px; color: #111827; }
+    .card-meta { font-size: 13px; color: #6B7280; }
+    .card-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid #F3F4F6; }
+    .card-link { color: #EAB308; font-weight: 600; font-size: 14px; text-decoration: none; }
+
+    /* ── Empty state ───────────────────── */
+    .empty {
+      text-align: center; padding: 60px 20px;
+      background: white; border-radius: 14px;
+      border: 2px dashed #D1D5DB; max-width: 500px; margin: 40px auto;
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty h2 { font-size: 20px; margin-bottom: 8px; }
+    .empty p { color: #6B7280; margin-bottom: 20px; }
+
+    /* ── Modal ─────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 100; justify-content: center; align-items: center; padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: white; border-radius: 16px; padding: 32px;
+      max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      border: 1px solid #E5E7EB;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px; padding-bottom: 12px;
+      border-bottom: 2px solid #EAB308;
+    }
+    .modal-header h2 { font-size: 22px; }
+    .modal-close {
+      background: none; border: none; font-size: 24px;
+      cursor: pointer; color: #6B7280;
+    }
+    .modal-close:hover { color: #EF4444; }
+
+    /* ── Form ──────────────────────────── */
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: #374151; margin-bottom: 6px;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 10px 14px; border: 2px solid #E5E7EB;
+      border-radius: 8px; font-size: 14px; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none; border-color: #EAB308;
+    }
+    .form-group textarea { min-height: 80px; resize: vertical; }
+
+    /* ── Upload area ───────────────────── */
+    .upload-area {
+      border: 2px dashed #D1D5DB; border-radius: 12px;
+      padding: 32px; text-align: center; cursor: pointer;
+      transition: all 0.2s; margin-bottom: 16px;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: #EAB308; background: #FEF9C3;
+    }
+    .upload-area .icon { font-size: 40px; margin-bottom: 8px; }
+    .upload-area p { color: #6B7280; font-size: 14px; }
+    .upload-area p strong { color: #EAB308; }
+
+    /* ── Transcription box ────────────── */
+    .transcript-box {
+      background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px;
+      padding: 16px; margin: 16px 0; font-size: 14px; line-height: 1.6;
+      max-height: 200px; overflow-y: auto; white-space: pre-wrap;
+    }
+
+    /* ── Extraction result ────────────── */
+    .extract-card {
+      background: white; border: 1px solid #E5E7EB; border-radius: 10px;
+      padding: 20px; margin: 16px 0;
+    }
+    .extract-card h4 { font-size: 15px; color: #111827; margin-bottom: 12px; }
+    .extract-row {
+      display: flex; justify-content: space-between; padding: 6px 0;
+      border-bottom: 1px solid #F3F4F6; font-size: 14px;
+    }
+    .extract-label { color: #6B7280; min-width: 140px; }
+    .extract-value { color: #111827; font-weight: 500; }
+    .extract-missing {
+      color: #EF4444; font-style: italic;
+    }
+    .missing-list { margin: 12px 0; padding: 12px; background: #FEF2F2; border-radius: 8px; border-left: 4px solid #EF4444; }
+    .missing-list h4 { color: #DC2626; margin-bottom: 8px; }
+    .missing-list li { color: #991B1B; font-size: 14px; margin-left: 20px; margin-bottom: 4px; }
+
+    /* ── Componentes table ─────────────── */
+    .comp-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+    .comp-table th {
+      background: #111827; color: #EAB308; padding: 10px 12px;
+      text-align: left; font-weight: 600;
+    }
+    .comp-table td {
+      padding: 10px 12px; border-bottom: 1px solid #E5E7EB;
+    }
+    .comp-table input {
+      width: 100%; padding: 6px 8px; border: 1px solid #E5E7EB; border-radius: 6px; font-size: 13px;
+    }
+    .comp-table input:focus { outline: none; border-color: #EAB308; }
+
+    /* ── Status banner ────────────────── */
+    .banner {
+      padding: 12px 16px; border-radius: 10px; margin: 16px 0;
+      font-size: 14px; display: none;
+    }
+    .banner.processing { background: #FEF9C3; color: #92400E; display: block; }
+    .banner.success { background: #DCFCE7; color: #166534; display: block; }
+    .banner.error { background: #FEF2F2; color: #991B1B; display: block; }
+
+    .spinner {
+      display: inline-block; width: 16px; height: 16px; border: 2px solid #E5E7EB;
+      border-top-color: #EAB308; border-radius: 50%;
+      animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ───────────────────────── */
+    .footer {
+      background: #111827; color: #9CA3AF; text-align: center;
+      padding: 16px; font-size: 12px; margin-top: 60px;
+    }
+    .footer strong { color: #EAB308; }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-logo">
+        <div class="header-logo-text">
+          <strong>LUBIA</strong>
+          INGELUBSA S.A.S.
+        </div>
+      </div>
+      <div class="header-info">
+        Calle 64 Norte #5BN - 146 OF. 41, Cali<br>
+        ingelubsa@ingelubsa.com
+      </div>
+    </div>
+  </header>
+
+  <main class="main" id="app">
+
+    <!-- HOME: lista de proyectos -->
+    <div id="view-home">
+      <div class="topbar">
+        <h1>Proyectos <span>LUBIA</span></h1>
+        <button class="btn btn-primary" onclick="toggleModal('modal-proyecto')">+ Nuevo Proyecto</button>
+      </div>
+      <div id="project-grid" class="grid"></div>
+      <div id="empty-state" class="empty" style="display:none">
+        <div class="empty-icon">📁</div>
+        <h2>Sin proyectos aún</h2>
+        <p>Creá tu primer proyecto para empezar a gestionar lubricación, SST, técnica y más con IA.</p>
+        <button class="btn btn-primary" onclick="toggleModal('modal-proyecto')">+ Crear Proyecto</button>
+      </div>
+    </div>
+
+    <!-- PROYECTO: detalle -->
+    <div id="view-project" style="display:none">
+      <div class="topbar">
+        <div>
+          <button class="btn btn-outline btn-sm" onclick="goHome()">← Proyectos</button>
+          <h1 style="margin-top:8px" id="project-title"></h1>
+        </div>
+        <button class="btn btn-primary" onclick="resetProject()">🔄 Nueva grabación</button>
+      </div>
+
+      <div id="banner" class="banner"></div>
+
+      <!-- Upload audio -->
+      <div class="upload-area" id="upload-area" onclick="document.getElementById('audio-file').click()">
+        <div class="icon">🎤</div>
+        <p><strong>Subí un audio de campo</strong> o arrastralo aquí</p>
+        <p style="font-size:12px;margin-top:4px">MP3, WAV, WebM, M4A</p>
+      </div>
+      <input type="file" id="audio-file" accept="audio/*" style="display:none" onchange="handleAudio(this.files[0])">
+
+      <!-- Transcripción -->
+      <div id="section-transcript" style="display:none">
+        <h3 style="margin-top:20px">📝 Transcripción</h3>
+        <div class="transcript-box" id="transcript-text"></div>
+        <button class="btn btn-primary" id="btn-extract" onclick="extraerDatos()">⚡ Extraer datos con IA</button>
+      </div>
+
+      <!-- Extracción -->
+      <div id="section-extract" style="display:none">
+        <h3 style="margin-top:20px">🔍 Datos extraídos</h3>
+        <div id="missing-alert" class="missing-list" style="display:none"></div>
+
+        <div class="extract-card">
+          <div class="form-group">
+            <label>Activo</label>
+            <input id="fld-activo" placeholder="Nombre del equipo">
+          </div>
+
+          <h4 style="margin:16px 0 8px">Componentes</h4>
+          <table class="comp-table">
+            <thead><tr><th>Componente</th><th>Cantidad</th><th>Lubricante</th><th>Frecuencia</th><th>Ubicación</th></tr></thead>
+            <tbody id="comp-tbody"></tbody>
+          </table>
+          <button class="btn btn-outline btn-sm" onclick="addComponentRow()">+ Componente</button>
+
+          <div class="form-group" style="margin-top:12px">
+            <label>Observaciones generales</label>
+            <textarea id="fld-obs" placeholder="Notas adicionales..."></textarea>
+          </div>
+        </div>
+
+        <button class="btn btn-green" onclick="generarExcel()">⬇ Descargar Excel</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal: Nuevo Proyecto -->
+  <div class="modal-overlay" id="modal-proyecto">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Nuevo Proyecto</h2>
+        <button class="modal-close" onclick="toggleModal('modal-proyecto')">×</button>
+      </div>
+      <div class="form-group">
+        <label>Nombre del proyecto</label>
+        <input id="new-project-name" placeholder="Ej: Planta Norte, Ruta Lubricación 2026...">
+      </div>
+      <button class="btn btn-primary" onclick="crearProyecto()">Crear Proyecto</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <strong>INGELUBSA S.A.S.</strong> © 2026 — Lubricación y Confiabilidad Industrial Colombia
+  </footer>
+
+<script>
+// ── Estado ─────────────────────────────────────────────
+let projects = [];
+let currentProject = null;
+let currentTranscription = null;
+let currentData = null;
+
+// ── Inicio ─────────────────────────────────────────────
+async function loadProjects() {
+  const res = await fetch("/api/projects");
+  projects = await res.json();
+  renderHome();
+}
+loadProjects();
+
+function renderHome() {
+  const grid = document.getElementById("project-grid");
+  const empty = document.getElementById("empty-state");
+
+  if (projects.length === 0) {
+    grid.innerHTML = "";
+    empty.style.display = "block";
+  } else {
+    empty.style.display = "none";
+    grid.innerHTML = projects.map(p => `
+      <div class="card" onclick="openProject('${p.id}')">
+        <div class="card-icon">🏭</div>
+        <h3>${esc(p.name)}</h3>
+        <div class="card-meta">Creado ${new Date(p.createdAt).toLocaleDateString("es-CO")}</div>
+        <div class="card-footer">
+          <span class="card-link">Entrar →</span>
+        </div>
+      </div>
+    `).join("");
+  }
+}
+
+function esc(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Navegación ─────────────────────────────────────────
+function goHome() {
+  document.getElementById("view-home").style.display = "block";
+  document.getElementById("view-project").style.display = "none";
+  currentProject = null;
+  loadProjects();
+}
+
+function openProject(id) {
+  currentProject = projects.find(p => p.id === id);
+  document.getElementById("view-home").style.display = "none";
+  document.getElementById("view-project").style.display = "block";
+  document.getElementById("project-title").textContent = currentProject.name;
+  resetProject();
+}
+
+function resetProject() {
+  currentTranscription = null;
+  currentData = null;
+  hideBanner();
+  document.getElementById("section-transcript").style.display = "none";
+  document.getElementById("section-extract").style.display = "none";
+  document.getElementById("transcript-text").textContent = "";
+  document.getElementById("comp-tbody").innerHTML = "";
+  document.getElementById("fld-activo").value = "";
+  document.getElementById("fld-obs").value = "";
+  document.getElementById("missing-alert").style.display = "none";
+  document.getElementById("btn-extract").disabled = false;
+  document.getElementById("upload-area").style.opacity = "1";
+}
+
+// ── Proyectos ──────────────────────────────────────────
+async function crearProyecto() {
+  const name = document.getElementById("new-project-name").value.trim();
+  if (!name) return alert("Poné un nombre");
+  const res = await fetch("/api/projects", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name })
+  });
+  const p = await res.json();
+  projects.push(p);
+  renderHome();
+  document.getElementById("new-project-name").value = "";
+  toggleModal("modal-proyecto");
+}
+
+function toggleModal(id) {
+  document.getElementById(id).classList.toggle("active");
+}
+
+// ── Audio upload ───────────────────────────────────────
+async function handleAudio(file) {
+  if (!file) return;
+  showBanner("Transcribiendo audio...", "processing");
+  document.getElementById("upload-area").style.opacity = "0.5";
+
+  const form = new FormData();
+  form.append("audio", file);
+
+  const res = await fetch("/api/transcribe", { method: "POST", body: form });
+  const data = await res.json();
+
+  if (data.error) { showBanner(data.error, "error"); return; }
+
+  currentTranscription = data.transcription;
+  document.getElementById("transcript-text").textContent = currentTranscription;
+  document.getElementById("section-transcript").style.display = "block";
+  hideBanner();
+}
+
+// ── Extraer con Claude ─────────────────────────────────
+async function extraerDatos() {
+  if (!currentTranscription) return;
+  showBanner("Claude analizando...", "processing");
+  document.getElementById("btn-extract").disabled = true;
+
+  const res = await fetch("/api/extraer", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transcription: currentTranscription, template: "ruta_lubricacion" })
+  });
+  currentData = await res.json();
+
+  if (currentData.error) { showBanner(currentData.error, "error"); return; }
+
+  // Llenar formulario
+  document.getElementById("fld-activo").value = currentData.activo || "";
+
+  const tbody = document.getElementById("comp-tbody");
+  tbody.innerHTML = "";
+  const comps = currentData.componentes || [];
+  for (const c of comps) {
+    addComponentRow(c.nombre || "", c.cantidad || "", c.lubricante || "", c.frecuencia || "", c.ubicacion || "");
+  }
+
+  // Mostrar faltantes
+  const faltantes = currentData.faltantes || [];
+  const preguntas = currentData.preguntas || [];
+  const missingDiv = document.getElementById("missing-alert");
+  if (faltantes.length > 0 || preguntas.length > 0) {
+    missingDiv.style.display = "block";
+    missingDiv.innerHTML = `
+      <h4>⚠️ Datos faltantes</h4>
+      ${faltantes.map(f => `<li>${esc(f)}</li>`).join("")}
+      ${preguntas.length > 0 ? `<p style="margin-top:8px;font-weight:600">Preguntas para completar:</p>` : ""}
+      ${preguntas.map(q => `<li style="color:#991B1B">${esc(q)}</li>`).join("")}
+    `;
+  } else {
+    missingDiv.style.display = "none";
+  }
+
+  document.getElementById("section-extract").style.display = "block";
+  hideBanner();
+}
+
+function addComponentRow(nombre="", cantidad="", lubricante="", frecuencia="", ubicacion="") {
+  const tbody = document.getElementById("comp-tbody");
+  const row = tbody.insertRow();
+  row.innerHTML = `
+    <td><input value="${esc(nombre)}" placeholder="Nombre"></td>
+    <td><input value="${esc(cantidad)}" placeholder="Cant." style="width:70px"></td>
+    <td><input value="${esc(lubricante)}" placeholder="VG EP 2..."></td>
+    <td><input value="${esc(frecuencia)}" placeholder="C/ 30 días..."></td>
+    <td><input value="${esc(ubicacion)}" placeholder="Nave 3..."></td>
+  `;
+}
+
+// ── Excel ──────────────────────────────────────────────
+async function generarExcel() {
+  const activo = document.getElementById("fld-activo").value;
+  const obs = document.getElementById("fld-obs").value;
+
+  const componentes = [];
+  const rows = document.getElementById("comp-tbody").rows;
+  for (const row of rows) {
+    const cells = row.querySelectorAll("input");
+    if (cells[0] && cells[0].value.trim()) {
+      componentes.push({
+        nombre: cells[0].value, cantidad: cells[1].value,
+        lubricante: cells[2].value, frecuencia: cells[3].value,
+        ubicacion: cells[4].value,
+      });
+    }
+  }
+
+  showBanner("Generando Excel...", "processing");
+  const res = await fetch("/api/generar-excel", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: { activo, componentes, observaciones: obs }, template: "ruta_lubricacion" })
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    showBanner(err.error || "Error", "error");
+    return;
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `lubia_${activo || "ruta"}_${Date.now()}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  showBanner("✅ Excel descargado con éxito", "success");
+}
+
+// ── UI helpers ─────────────────────────────────────────
+function showBanner(msg, type) {
+  const b = document.getElementById("banner");
+  b.className = `banner ${type}`;
+  b.innerHTML = (type === "processing" ? '<span class="spinner"></span>' : "") + msg;
+}
+function hideBanner() {
+  document.getElementById("banner").className = "banner";
+  document.getElementById("banner").innerHTML = "";
+}
+
+// ── Drag & drop ────────────────────────────────────────
+const uploadArea = document.getElementById("upload-area");
+uploadArea.addEventListener("dragover", e => { e.preventDefault(); uploadArea.classList.add("dragover"); });
+uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
+uploadArea.addEventListener("drop", e => {
+  e.preventDefault();
+  uploadArea.classList.remove("dragover");
+  const file = e.dataTransfer.files[0];
+  if (file) handleAudio(file);
+});
+</script>
+</body>
+</html>

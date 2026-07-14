@@ -12,6 +12,10 @@
       color: #111827;
       min-height: 100vh;
     }
+    #app-wrapper {
+      display: flex; flex-direction: column; min-height: 100vh;
+    }
+    .main-content { flex: 1; }
 
     /* ── Header ─────────────────────────── */
     .header {
@@ -205,6 +209,8 @@
 </head>
 <body>
 
+<div id="app-wrapper">
+
   <header class="header">
     <div class="header-inner">
       <div class="header-logo">
@@ -294,6 +300,8 @@
 
   </main>
 
+  </div><!-- /main-content -->
+
   <!-- Modal: Nuevo Proyecto -->
   <div class="modal-overlay" id="modal-proyecto">
     <div class="modal">
@@ -312,6 +320,8 @@
   <footer class="footer">
     <strong>INGELUBSA S.A.S.</strong> © 2026 — Lubricación y Confiabilidad Industrial Colombia
   </footer>
+
+</div><!-- /app-wrapper -->
 
 <script>
 // ── Estado ─────────────────────────────────────────────

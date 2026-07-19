@@ -205,6 +205,23 @@
       padding: 16px; font-size: 12px; margin-top: 60px;
     }
     .footer strong { color: #EAB308; }
+
+    /* ── Gear icon ──────────────────────── */
+    .gear-btn {
+      background: none; border: none; color: #9CA3AF; font-size: 20px;
+      cursor: pointer; padding: 4px 8px; border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .gear-btn:hover { color: #EAB308; background: rgba(255,255,255,0.1); }
+
+    /* ── Settings form ───────────────────── */
+    .settings-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+    .settings-row label { font-size: 13px; font-weight: 600; min-width: 180px; color: #374151; }
+    .settings-row input {
+      flex: 1; padding: 8px 12px; border: 2px solid #E5E7EB;
+      border-radius: 8px; font-size: 13px;
+    }
+    .settings-row input:focus { outline: none; border-color: #EAB308; }
   </style>
 </head>
 <body>
@@ -220,6 +237,7 @@
         </div>
       </div>
       <div class="header-info">
+        <button class="gear-btn" onclick="toggleModal('modal-settings')" title="Configuración">⚙️</button>
         Calle 64 Norte #5BN - 146 OF. 41, Cali<br>
         ingelubsa@ingelubsa.com
       </div>
@@ -320,6 +338,44 @@
   <footer class="footer">
     <strong>INGELUBSA S.A.S.</strong> © 2026 — Lubricación y Confiabilidad Industrial Colombia
   </footer>
+
+  <!-- Modal: Settings -->
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⚙️ Configuración</h2>
+        <button class="modal-close" onclick="toggleModal('modal-settings')">×</button>
+      </div>
+      <div class="settings-row">
+        <label>Deepgram API Key</label>
+        <input id="set-deepgram" type="password" placeholder="API Key para transcripción">
+      </div>
+      <div class="settings-row">
+        <label>Claude API Key</label>
+        <input id="set-claude" type="password" placeholder="sk-ant-api03-...">
+      </div>
+      <div class="settings-row">
+        <label>Gmail Usuario</label>
+        <input id="set-gmail-user" placeholder="correo@gmail.com">
+      </div>
+      <div class="settings-row">
+        <label>Gmail Contraseña (app)</label>
+        <input id="set-gmail-pass" type="password" placeholder="abcd efgh ijkl mnop">
+      </div>
+      <div class="settings-row">
+        <label>Email destino</label>
+        <input id="set-email-to" placeholder="destino@correo.com">
+      </div>
+      <div class="settings-row">
+        <label>Ollama Model</label>
+        <input id="set-ollama" placeholder="qwen2.5">
+      </div>
+      <div style="margin-top:16px;display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Guardar</button>
+        <span id="settings-msg" style="font-size:13px;padding-top:8px"></span>
+      </div>
+    </div>
+  </div>
 
 </div><!-- /app-wrapper -->
 
@@ -554,6 +610,39 @@ uploadArea.addEventListener("drop", e => {
   const file = e.dataTransfer.files[0];
   if (file) handleAudio(file);
 });
+
+// ── Settings ───────────────────────────────────────────
+async function loadSettings() {
+  const res = await fetch("/api/settings");
+  const s = await res.json();
+  document.getElementById("set-deepgram").value = s.DEEPGRAM_API_KEY || "";
+  document.getElementById("set-claude").value = s.CLAUDE_API_KEY || "";
+  document.getElementById("set-gmail-user").value = s.GMAIL_USER || "";
+  document.getElementById("set-gmail-pass").value = s.GMAIL_PASS || "";
+  document.getElementById("set-email-to").value = s.EMAIL_TO || "";
+  document.getElementById("set-ollama").value = s.OLLAMA_MODEL || "";
+}
+loadSettings();
+
+async function saveSettings() {
+  const data = {
+    DEEPGRAM_API_KEY: document.getElementById("set-deepgram").value.trim(),
+    CLAUDE_API_KEY: document.getElementById("set-claude").value.trim(),
+    GMAIL_USER: document.getElementById("set-gmail-user").value.trim(),
+    GMAIL_PASS: document.getElementById("set-gmail-pass").value.trim(),
+    EMAIL_TO: document.getElementById("set-email-to").value.trim(),
+    OLLAMA_MODEL: document.getElementById("set-ollama").value.trim(),
+  };
+  const res = await fetch("/api/settings", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  const r = await res.json();
+  const msg = document.getElementById("settings-msg");
+  if (r.ok) { msg.textContent = "✅ Guardado"; msg.style.color = "#22C55E"; }
+  else { msg.textContent = "❌ Error"; msg.style.color = "#EF4444"; }
+  setTimeout(() => { msg.textContent = ""; }, 3000);
+}
 </script>
 </body>
 </html>

@@ -6,40 +6,77 @@ import Anthropic from "@anthropic-ai/sdk";
 import ExcelJS from "exceljs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
+const DATA_DIR = join(__dirname, "data");
+const PROJ_FILE = join(DATA_DIR, "projects.json");
+const SETTINGS_FILE = join(DATA_DIR, "settings.json");
+const EXPORT_DIR = join(__dirname, "exports");
+mkdirSync(DATA_DIR, { recursive: true });
+mkdirSync(EXPORT_DIR, { recursive: true });
+
+// ── Helpers: archivo como BD ──────────────────────────
+function loadJSON(path, fallback) {
+  try { return existsSync(path) ? JSON.parse(readFileSync(path, "utf-8")) : fallback; } catch { return fallback; }
+}
+function saveJSON(path, data) { writeFileSync(path, JSON.stringify(data, null, 2), "utf-8"); }
+
+function getSettings() {
+  return loadJSON(SETTINGS_FILE, {});
+}
+
+function getSetting(key) {
+  const s = getSettings();
+  return s[key] || process.env[key] || "";
+}
+
+// ── Deepgram / Claude lazy ────────────────────────────
 let _deepgram = null, _claude = null;
 function getDeepgram() {
-  if (!_deepgram) _deepgram = createClient(process.env.DEEPGRAM_API_KEY);
+  if (!_deepgram) _deepgram = createClient(getSetting("DEEPGRAM_API_KEY"));
   return _deepgram;
 }
 function getClaude() {
-  if (!_claude) _claude = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
+  if (!_claude) _claude = new Anthropic({ apiKey: getSetting("CLAUDE_API_KEY") });
   return _claude;
 }
-
-const EXPORT_DIR = join(__dirname, "exports");
-mkdirSync(EXPORT_DIR, { recursive: true });
 
 app.use(express.json());
 app.use(express.static(join(__dirname, "public")));
 
-// ── Proyectos (en memoria para demo) ──────────────────
-const projects = [];
-
-app.get("/api/projects", (_req, res) => res.json(projects));
+// ── Proyectos (persistencia en archivo) ────────────────
+app.get("/api/projects", (_req, res) => res.json(loadJSON(PROJ_FILE, [])));
 
 app.post("/api/projects", (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: "Nombre requerido" });
+  const projects = loadJSON(PROJ_FILE, []);
   const p = { id: randomUUID(), name, createdAt: new Date().toISOString() };
   projects.push(p);
+  saveJSON(PROJ_FILE, projects);
   res.json(p);
+});
+
+// ── Settings ───────────────────────────────────────────
+app.get("/api/settings", (_req, res) => {
+  res.json(getSettings());
+});
+
+app.post("/api/settings", (req, res) => {
+  const allowed = ["DEEPGRAM_API_KEY", "CLAUDE_API_KEY", "GMAIL_USER", "GMAIL_PASS", "EMAIL_TO", "OLLAMA_MODEL"];
+  const current = getSettings();
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) current[key] = req.body[key];
+  }
+  saveJSON(SETTINGS_FILE, current);
+  _deepgram = null;
+  _claude = null;
+  res.json({ ok: true });
 });
 
 // ── Transcribir audio ──────────────────────────────────
@@ -125,7 +162,6 @@ app.post("/api/generar-excel", async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Ruta de Lubricación");
 
-    // Estilo INGELUBSA
     sheet.columns = [
       { header: "Activo", key: "activo", width: 25 },
       { header: "Componente", key: "componente", width: 25 },
@@ -136,20 +172,15 @@ app.post("/api/generar-excel", async (req, res) => {
       { header: "Observaciones", key: "observaciones", width: 30 },
     ];
 
-    // Header con estilo amarillo INGELUBSA
     const headerRow = sheet.getRow(1);
     headerRow.height = 30;
     headerRow.eachCell((cell) => {
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEAB308" } };
       cell.font = { bold: true, color: { argb: "FF111827" }, size: 12 };
       cell.alignment = { vertical: "middle", horizontal: "center" };
-      cell.border = {
-        top: { style: "thin" }, bottom: { style: "thin" },
-        left: { style: "thin" }, right: { style: "thin" },
-      };
+      cell.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
     });
 
-    // Datos
     const componentes = data.componentes || [];
     let rowIdx = 2;
     for (const comp of componentes) {
@@ -164,10 +195,7 @@ app.post("/api/generar-excel", async (req, res) => {
       row.eachCell((cell) => {
         cell.font = { size: 11 };
         cell.alignment = { vertical: "middle" };
-        cell.border = {
-          top: { style: "thin" }, bottom: { style: "thin" },
-          left: { style: "thin" }, right: { style: "thin" },
-        };
+        cell.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
       });
       rowIdx++;
     }
@@ -239,4 +267,5 @@ Extrae datos de pruebas técnicas. Devuelve SOLO JSON:
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`LUBIA corriendo en http://localhost:${PORT}`);
+  console.log(`Datos en: ${DATA_DIR}`);
 });

@@ -6,7 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import ExcelJS from "exceljs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -76,6 +76,73 @@ app.post("/api/settings", (req, res) => {
   saveJSON(SETTINGS_FILE, current);
   _deepgram = null;
   _claude = null;
+  res.json({ ok: true });
+});
+
+// ── Archivos y carpetas del proyecto ──────────────────
+function projectDir(projectId) {
+  const dir = join(DATA_DIR, "projects", projectId);
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+function projectMeta(projectId) {
+  return loadJSON(join(projectDir(projectId), "meta.json"), { folders: [], files: [] });
+}
+function saveProjectMeta(projectId, meta) {
+  saveJSON(join(projectDir(projectId), "meta.json"), meta);
+}
+
+app.get("/api/projects/:id/files", (req, res) => {
+  const meta = projectMeta(req.params.id);
+  res.json({ folders: meta.folders || [], files: meta.files || [] });
+});
+
+app.post("/api/projects/:id/folders", (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Nombre requerido" });
+  const meta = projectMeta(req.params.id);
+  const folder = { id: randomUUID(), name, parentId: req.body.parentId || null, createdAt: new Date().toISOString() };
+  meta.folders = meta.folders || [];
+  meta.folders.push(folder);
+  saveProjectMeta(req.params.id, meta);
+  res.json(folder);
+});
+
+app.delete("/api/projects/:id/folders/:folderId", (req, res) => {
+  const meta = projectMeta(req.params.id);
+  meta.folders = (meta.folders || []).filter((f) => f.id !== req.params.folderId);
+  meta.files = (meta.files || []).map((f) => (f.folderId === req.params.folderId ? { ...f, folderId: null } : f));
+  saveProjectMeta(req.params.id, meta);
+  res.json({ ok: true });
+});
+
+const fileUpload = multer({ storage: multer.diskStorage({
+  destination: (req, _file, cb) => cb(null, projectDir(req.params.id)),
+  filename: (_req, file, cb) => cb(null, "f_" + randomUUID() + "_" + file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")),
+}), limits: { fileSize: 50 * 1024 * 1024 } });
+
+app.post("/api/projects/:id/files", fileUpload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No se recibió archivo" });
+  const meta = projectMeta(req.params.id);
+  const f = {
+    id: randomUUID(), name: req.file.originalname, diskName: req.file.filename,
+    folderId: req.body.folderId || null, size: req.file.size, mimetype: req.file.mimetype,
+    createdAt: new Date().toISOString(),
+  };
+  meta.files = meta.files || [];
+  meta.files.push(f);
+  saveProjectMeta(req.params.id, meta);
+  res.json(f);
+});
+
+app.delete("/api/projects/:id/files/:fileId", (req, res) => {
+  const meta = projectMeta(req.params.id);
+  const file = (meta.files || []).find((f) => f.id === req.params.fileId);
+  if (file) {
+    try { unlinkSync(join(projectDir(req.params.id), file.diskName)); } catch {}
+  }
+  meta.files = (meta.files || []).filter((f) => f.id !== req.params.fileId);
+  saveProjectMeta(req.params.id, meta);
   res.json({ ok: true });
 });
 

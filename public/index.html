@@ -5,644 +5,277 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LUBIA | INGELUBSA S.A.S.</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #F8FAFC;
-      color: #111827;
-      min-height: 100vh;
-    }
-    #app-wrapper {
-      display: flex; flex-direction: column; min-height: 100vh;
-    }
-    .main-content { flex: 1; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,sans-serif;background:#F8FAFC;color:#111827}
+    #app-wrapper{display:flex;flex-direction:column;min-height:100vh}
+    .main-content{flex:1}
 
-    /* ── Header ─────────────────────────── */
-    .header {
-      background: #111827;
-      border-bottom: 4px solid #EAB308;
-      padding: 0;
-    }
-    .header-inner {
-      max-width: 1200px; margin: 0 auto;
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 24px;
-    }
-    .header-logo {
-      display: flex; align-items: center; gap: 12px;
-      color: white; text-decoration: none;
-    }
-    .header-logo img { height: 40px; }
-    .header-logo-text { font-size: 14px; color: #9CA3AF; }
-    .header-logo-text strong { color: #EAB308; font-size: 22px; display: block; }
-    .header-info { color: #9CA3AF; font-size: 13px; text-align: right; }
+    /* Header */
+    .header{background:#111827;border-bottom:4px solid #EAB308}
+    .header-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;padding:12px 24px}
+    .header-logo{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none}
+    .header-logo-text{font-size:14px;color:#9CA3AF}
+    .header-logo-text strong{color:#EAB308;font-size:22px;display:block}
+    .header-info{color:#9CA3AF;font-size:13px;text-align:right}
+    .gear-btn{background:none;border:none;color:#9CA3AF;font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all .2s}
+    .gear-btn:hover{color:#EAB308;background:rgba(255,255,255,.1)}
 
-    /* ── Main ──────────────────────────── */
-    .main { max-width: 1200px; margin: 32px auto; padding: 0 24px; }
+    /* Main */
+    .main{max-width:1200px;margin:32px auto;padding:0 24px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+    .topbar h1{font-size:28px;color:#111827}
+    .topbar h1 span{color:#EAB308}
 
-    /* ── Top bar ───────────────────────── */
-    .topbar {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 24px;
-    }
-    .topbar h1 { font-size: 28px; color: #111827; }
-    .topbar h1 span { color: #EAB308; }
+    /* Buttons */
+    .btn{padding:10px 20px;border:none;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+    .btn-primary{background:#EAB308;color:#111827}
+    .btn-primary:hover{background:#FACC15;transform:scale(1.03)}
+    .btn-outline{background:#fff;color:#111827;border:2px solid #EAB308}
+    .btn-outline:hover{background:#FEF3C7}
+    .btn-sm{padding:6px 14px;font-size:13px}
+    .btn-green{background:#22C55E;color:#fff}
+    .btn-green:hover{background:#16A34A}
+    .btn-red{background:#EF4444;color:#fff}
+    .btn-xs{padding:4px 10px;font-size:11px;border-radius:6px}
 
-    .btn {
-      padding: 10px 20px; border: none; border-radius: 10px;
-      font-weight: 600; font-size: 14px; cursor: pointer;
-      transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
-    }
-    .btn-primary { background: #EAB308; color: #111827; }
-    .btn-primary:hover { background: #FACC15; transform: scale(1.03); }
-    .btn-outline { background: white; color: #111827; border: 2px solid #EAB308; }
-    .btn-outline:hover { background: #FEF3C7; }
-    .btn-sm { padding: 6px 14px; font-size: 13px; }
-    .btn-green { background: #22C55E; color: white; }
-    .btn-green:hover { background: #16A34A; }
-    .btn-red { background: #EF4444; color: white; }
+    /* Tabs */
+    .tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:2px solid #E5E7EB}
+    .tab-btn{padding:10px 20px;border:none;background:none;color:#6B7280;font-size:14px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+    .tab-btn:hover{color:#111827}
+    .tab-btn.active{color:#EAB308;border-bottom-color:#EAB308}
 
-    /* ── Project grid ──────────────────── */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
-    }
-    .card {
-      background: white; border-radius: 14px; padding: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      border: 2px solid #E5E7EB;
-      transition: all 0.2s; cursor: pointer;
-    }
-    .card:hover { border-color: #EAB308; box-shadow: 0 4px 20px rgba(234,179,8,0.15); transform: translateY(-2px); }
-    .card-icon { font-size: 32px; margin-bottom: 12px; }
-    .card h3 { font-size: 17px; margin-bottom: 8px; color: #111827; }
-    .card-meta { font-size: 13px; color: #6B7280; }
-    .card-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid #F3F4F6; }
-    .card-link { color: #EAB308; font-weight: 600; font-size: 14px; text-decoration: none; }
+    /* Cards / Grid */
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+    .card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:2px solid #E5E7EB;transition:all .2s;cursor:pointer}
+    .card:hover{border-color:#EAB308;box-shadow:0 4px 20px rgba(234,179,8,.15);transform:translateY(-2px)}
+    .card-icon{font-size:32px;margin-bottom:12px}
+    .card h3{font-size:17px;margin-bottom:8px}
+    .card-meta{font-size:13px;color:#6B7280}
+    .card-footer{margin-top:16px;padding-top:12px;border-top:1px solid #F3F4F6}
+    .card-link{color:#EAB308;font-weight:600;font-size:14px;text-decoration:none}
 
-    /* ── Empty state ───────────────────── */
-    .empty {
-      text-align: center; padding: 60px 20px;
-      background: white; border-radius: 14px;
-      border: 2px dashed #D1D5DB; max-width: 500px; margin: 40px auto;
-    }
-    .empty-icon { font-size: 48px; margin-bottom: 16px; }
-    .empty h2 { font-size: 20px; margin-bottom: 8px; }
-    .empty p { color: #6B7280; margin-bottom: 20px; }
+    /* Empty */
+    .empty{text-align:center;padding:60px 20px;background:#fff;border-radius:14px;border:2px dashed #D1D5DB;max-width:500px;margin:40px auto}
+    .empty-icon{font-size:48px;margin-bottom:16px}
+    .empty h2{font-size:20px;margin-bottom:8px}
+    .empty p{color:#6B7280;margin-bottom:20px}
 
-    /* ── Modal ─────────────────────────── */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-      z-index: 100; justify-content: center; align-items: center; padding: 20px;
-    }
-    .modal-overlay.active { display: flex; }
-    .modal {
-      background: white; border-radius: 16px; padding: 32px;
-      max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      border: 1px solid #E5E7EB;
-    }
-    .modal-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 24px; padding-bottom: 12px;
-      border-bottom: 2px solid #EAB308;
-    }
-    .modal-header h2 { font-size: 22px; }
-    .modal-close {
-      background: none; border: none; font-size: 24px;
-      cursor: pointer; color: #6B7280;
-    }
-    .modal-close:hover { color: #EF4444; }
+    /* Modal */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;justify-content:center;align-items:center;padding:20px}
+    .modal-overlay.active{display:flex}
+    .modal{background:#fff;border-radius:16px;padding:32px;max-width:800px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);border:1px solid #E5E7EB}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:12px;border-bottom:2px solid #EAB308}
+    .modal-header h2{font-size:22px}
+    .modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#6B7280}
+    .modal-close:hover{color:#EF4444}
 
-    /* ── Form ──────────────────────────── */
-    .form-group { margin-bottom: 16px; }
-    .form-group label {
-      display: block; font-size: 13px; font-weight: 600;
-      color: #374151; margin-bottom: 6px;
-    }
-    .form-group input, .form-group textarea, .form-group select {
-      width: 100%; padding: 10px 14px; border: 2px solid #E5E7EB;
-      border-radius: 8px; font-size: 14px; transition: border-color 0.2s;
-    }
-    .form-group input:focus, .form-group textarea:focus {
-      outline: none; border-color: #EAB308;
-    }
-    .form-group textarea { min-height: 80px; resize: vertical; }
+    /* Forms */
+    .form-group{margin-bottom:16px}
+    .form-group label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px}
+    .form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 14px;border:2px solid #E5E7EB;border-radius:8px;font-size:14px;transition:border-color .2s}
+    .form-group input:focus,.form-group textarea:focus{outline:none;border-color:#EAB308}
+    .form-group textarea{min-height:80px;resize:vertical}
 
-    /* ── Upload area ───────────────────── */
-    .upload-area {
-      border: 2px dashed #D1D5DB; border-radius: 12px;
-      padding: 32px; text-align: center; cursor: pointer;
-      transition: all 0.2s; margin-bottom: 16px;
-    }
-    .upload-area:hover, .upload-area.dragover {
-      border-color: #EAB308; background: #FEF9C3;
-    }
-    .upload-area .icon { font-size: 40px; margin-bottom: 8px; }
-    .upload-area p { color: #6B7280; font-size: 14px; }
-    .upload-area p strong { color: #EAB308; }
+    /* Upload */
+    .upload-area{border:2px dashed #D1D5DB;border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px}
+    .upload-area:hover,.upload-area.dragover{border-color:#EAB308;background:#FEF9C3}
+    .upload-area .icon{font-size:40px;margin-bottom:8px}
+    .upload-area p{color:#6B7280;font-size:14px}
+    .upload-area p strong{color:#EAB308}
 
-    /* ── Transcription box ────────────── */
-    .transcript-box {
-      background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px;
-      padding: 16px; margin: 16px 0; font-size: 14px; line-height: 1.6;
-      max-height: 200px; overflow-y: auto; white-space: pre-wrap;
-    }
+    /* Transcription */
+    .transcript-box{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:16px;margin:16px 0;font-size:14px;line-height:1.6;max-height:200px;overflow-y:auto;white-space:pre-wrap}
 
-    /* ── Extraction result ────────────── */
-    .extract-card {
-      background: white; border: 1px solid #E5E7EB; border-radius: 10px;
-      padding: 20px; margin: 16px 0;
-    }
-    .extract-card h4 { font-size: 15px; color: #111827; margin-bottom: 12px; }
-    .extract-row {
-      display: flex; justify-content: space-between; padding: 6px 0;
-      border-bottom: 1px solid #F3F4F6; font-size: 14px;
-    }
-    .extract-label { color: #6B7280; min-width: 140px; }
-    .extract-value { color: #111827; font-weight: 500; }
-    .extract-missing {
-      color: #EF4444; font-style: italic;
-    }
-    .missing-list { margin: 12px 0; padding: 12px; background: #FEF2F2; border-radius: 8px; border-left: 4px solid #EF4444; }
-    .missing-list h4 { color: #DC2626; margin-bottom: 8px; }
-    .missing-list li { color: #991B1B; font-size: 14px; margin-left: 20px; margin-bottom: 4px; }
+    /* Extraction */
+    .extract-card{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:20px;margin:16px 0}
+    .extract-card h4{font-size:15px;color:#111827;margin-bottom:12px}
+    .extract-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:14px}
+    .extract-label{color:#6B7280;min-width:140px}
+    .extract-value{color:#111827;font-weight:500}
+    .missing-list{margin:12px 0;padding:12px;background:#FEF2F2;border-radius:8px;border-left:4px solid #EF4444}
+    .missing-list h4{color:#DC2626;margin-bottom:8px}
+    .missing-list li{color:#991B1B;font-size:14px;margin-left:20px;margin-bottom:4px}
 
-    /* ── Componentes table ─────────────── */
-    .comp-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
-    .comp-table th {
-      background: #111827; color: #EAB308; padding: 10px 12px;
-      text-align: left; font-weight: 600;
-    }
-    .comp-table td {
-      padding: 10px 12px; border-bottom: 1px solid #E5E7EB;
-    }
-    .comp-table input {
-      width: 100%; padding: 6px 8px; border: 1px solid #E5E7EB; border-radius: 6px; font-size: 13px;
-    }
-    .comp-table input:focus { outline: none; border-color: #EAB308; }
+    /* Table */
+    .comp-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+    .comp-table th{background:#111827;color:#EAB308;padding:10px 12px;text-align:left;font-weight:600}
+    .comp-table td{padding:10px 12px;border-bottom:1px solid #E5E7EB}
+    .comp-table input{width:100%;padding:6px 8px;border:1px solid #E5E7EB;border-radius:6px;font-size:13px}
+    .comp-table input:focus{outline:none;border-color:#EAB308}
 
-    /* ── Status banner ────────────────── */
-    .banner {
-      padding: 12px 16px; border-radius: 10px; margin: 16px 0;
-      font-size: 14px; display: none;
-    }
-    .banner.processing { background: #FEF9C3; color: #92400E; display: block; }
-    .banner.success { background: #DCFCE7; color: #166534; display: block; }
-    .banner.error { background: #FEF2F2; color: #991B1B; display: block; }
+    /* Banner */
+    .banner{padding:12px 16px;border-radius:10px;margin:16px 0;font-size:14px;display:none}
+    .banner.processing{background:#FEF9C3;color:#92400E;display:block}
+    .banner.success{background:#DCFCE7;color:#166534;display:block}
+    .banner.error{background:#FEF2F2;color:#991B1B;display:block}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid #E5E7EB;border-top-color:#EAB308;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
-    .spinner {
-      display: inline-block; width: 16px; height: 16px; border: 2px solid #E5E7EB;
-      border-top-color: #EAB308; border-radius: 50%;
-      animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 8px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* ── File Tree ──────────────────────── */
+    .file-tree{background:#fff;border-radius:12px;border:1px solid #E5E7EB;overflow:hidden}
+    .file-tree-header{padding:14px 20px;background:#F9FAFB;border-bottom:1px solid #E5E7EB;display:flex;gap:8px;align-items:center}
+    .tree-item{display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid #F3F4F6;font-size:13px;transition:background .1s;cursor:pointer}
+    .tree-item:hover{background:#FEF9C3}
+    .tree-item .icon{font-size:16px;width:20px;text-align:center}
+    .tree-item .name{flex:1;color:#111827}
+    .tree-item .meta{color:#9CA3AF;font-size:11px;margin-left:auto}
+    .tree-folder{padding-left:8px}
+    .folder-indent{margin-left:0}
+    .folder-indent .tree-item{padding-left:40px}
+    .folder-toggle{font-size:10px;width:16px;text-align:center;cursor:pointer;color:#6B7280}
 
-    /* ── Footer ───────────────────────── */
-    .footer {
-      background: #111827; color: #9CA3AF; text-align: center;
-      padding: 16px; font-size: 12px; margin-top: 60px;
-    }
-    .footer strong { color: #EAB308; }
+    /* ── Chat ───────────────────────────── */
+    .chat-container{background:#fff;border-radius:12px;border:1px solid #E5E7EB;display:flex;flex-direction:column;height:450px}
+    .chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+    .chat-msg{max-width:80%;padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.5}
+    .chat-msg.user{align-self:flex-end;background:#EAB308;color:#111827;border-bottom-right-radius:4px}
+    .chat-msg.assistant{align-self:flex-start;background:#F3F4F6;color:#111827;border-bottom-left-radius:4px}
+    .chat-msg .attach{display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.1);border-radius:6px;padding:2px 8px;margin-top:6px;font-size:12px}
+    .chat-input-wrap{border-top:1px solid #E5E7EB;padding:12px 16px}
+    .chat-attachments{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+    .chat-chip{display:inline-flex;align-items:center;gap:4px;background:#FEF3C7;border:1px solid #EAB308;border-radius:20px;padding:4px 12px;font-size:12px}
+    .chat-chip .remove{cursor:pointer;color:#EF4444;font-weight:700}
+    .chat-row{display:flex;gap:8px}
+    .chat-row input{flex:1;padding:10px 14px;border:1px solid #E5E7EB;border-radius:20px;font-size:13px;outline:none}
+    .chat-row input:focus{border-color:#EAB308}
+    .chat-row button{background:#EAB308;color:#111827;border:none;border-radius:20px;padding:10px 18px;font-weight:600;cursor:pointer}
 
-    /* ── Gear icon ──────────────────────── */
-    .gear-btn {
-      background: none; border: none; color: #9CA3AF; font-size: 20px;
-      cursor: pointer; padding: 4px 8px; border-radius: 6px;
-      transition: all 0.2s;
-    }
-    .gear-btn:hover { color: #EAB308; background: rgba(255,255,255,0.1); }
+    /* ── @ Picker ──────────────────────── */
+    .at-picker{position:absolute;bottom:100%;left:0;right:0;max-height:200px;overflow-y:auto;background:#fff;border:1px solid #E5E7EB;border-radius:10px;box-shadow:0 -4px 12px rgba(0,0,0,.1);margin-bottom:4px;display:none;z-index:50}
+    .at-picker.show{display:block}
+    .at-item{padding:8px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px}
+    .at-item:hover,.at-item.sel{background:#FEF3C7}
+    .at-item .icon{font-size:16px}
 
-    /* ── Settings form ───────────────────── */
-    .settings-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
-    .settings-row label { font-size: 13px; font-weight: 600; min-width: 180px; color: #374151; }
-    .settings-row input {
-      flex: 1; padding: 8px 12px; border: 2px solid #E5E7EB;
-      border-radius: 8px; font-size: 13px;
-    }
-    .settings-row input:focus { outline: none; border-color: #EAB308; }
+    /* Settings */
+    .settings-row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+    .settings-row label{font-size:13px;font-weight:600;min-width:180px;color:#374151}
+    .settings-row input{flex:1;padding:8px 12px;border:2px solid #E5E7EB;border-radius:8px;font-size:13px}
+    .settings-row input:focus{outline:none;border-color:#EAB308}
+
+    /* Footer */
+    .footer{background:#111827;color:#9CA3AF;text-align:center;padding:16px;font-size:12px}
+    .footer strong{color:#EAB308}
   </style>
 </head>
 <body>
-
 <div id="app-wrapper">
+<header class="header"><div class="header-inner"><div class="header-logo"><div class="header-logo-text"><strong>LUBIA</strong>INGELUBSA S.A.S.</div></div><div class="header-info"><button class="gear-btn" onclick="toggleModal('modal-settings')" title="Configuración">⚙️</button>Calle 64 Norte #5BN-146, Cali<br>ingelubsa@ingelubsa.com</div></div></header>
+<div class="main-content"><main class="main" id="app">
 
-  <header class="header">
-    <div class="header-inner">
-      <div class="header-logo">
-        <div class="header-logo-text">
-          <strong>LUBIA</strong>
-          INGELUBSA S.A.S.
-        </div>
-      </div>
-      <div class="header-info">
-        <button class="gear-btn" onclick="toggleModal('modal-settings')" title="Configuración">⚙️</button>
-        Calle 64 Norte #5BN - 146 OF. 41, Cali<br>
-        ingelubsa@ingelubsa.com
-      </div>
-    </div>
-  </header>
+<!-- HOME -->
+<div id="view-home">
+  <div class="topbar"><h1>Proyectos <span>LUBIA</span></h1><button class="btn btn-primary" onclick="toggleModal('modal-proyecto')">+ Nuevo Proyecto</button></div>
+  <div id="project-grid" class="grid"></div>
+  <div id="empty-state" class="empty" style="display:none"><div class="empty-icon">📁</div><h2>Sin proyectos aún</h2><p>Creá tu primer proyecto para empezar a gestionar lubricación, SST, técnica y más con IA.</p><button class="btn btn-primary" onclick="toggleModal('modal-proyecto')">+ Crear Proyecto</button></div>
+</div>
 
-  <main class="main" id="app">
+<!-- PROYECTO -->
+<div id="view-project" style="display:none">
+  <div class="topbar"><div><button class="btn btn-outline btn-sm" onclick="goHome()">← Proyectos</button><h1 style="margin-top:8px" id="project-title"></h1></div><button class="btn btn-primary" onclick="openAudioTab()">🎤 Subir Audio</button></div>
 
-    <!-- HOME: lista de proyectos -->
-    <div id="view-home">
-      <div class="topbar">
-        <h1>Proyectos <span>LUBIA</span></h1>
-        <button class="btn btn-primary" onclick="toggleModal('modal-proyecto')">+ Nuevo Proyecto</button>
-      </div>
-      <div id="project-grid" class="grid"></div>
-      <div id="empty-state" class="empty" style="display:none">
-        <div class="empty-icon">📁</div>
-        <h2>Sin proyectos aún</h2>
-        <p>Creá tu primer proyecto para empezar a gestionar lubricación, SST, técnica y más con IA.</p>
-        <button class="btn btn-primary" onclick="toggleModal('modal-proyecto')">+ Crear Proyecto</button>
-      </div>
-    </div>
-
-    <!-- PROYECTO: detalle -->
-    <div id="view-project" style="display:none">
-      <div class="topbar">
-        <div>
-          <button class="btn btn-outline btn-sm" onclick="goHome()">← Proyectos</button>
-          <h1 style="margin-top:8px" id="project-title"></h1>
-        </div>
-        <button class="btn btn-primary" onclick="resetProject()">🔄 Nueva grabación</button>
-      </div>
-
-      <div id="banner" class="banner"></div>
-
-      <!-- Upload audio -->
-      <div class="upload-area" id="upload-area" onclick="document.getElementById('audio-file').click()">
-        <div class="icon">🎤</div>
-        <p><strong>Subí un audio de campo</strong> o arrastralo aquí</p>
-        <p style="font-size:12px;margin-top:4px">MP3, WAV, WebM, M4A</p>
-      </div>
-      <input type="file" id="audio-file" accept="audio/*" style="display:none" onchange="handleAudio(this.files[0])">
-
-      <!-- Transcripción -->
-      <div id="section-transcript" style="display:none">
-        <h3 style="margin-top:20px">📝 Transcripción</h3>
-        <div class="transcript-box" id="transcript-text"></div>
-        <button class="btn btn-primary" id="btn-extract" onclick="extraerDatos()">⚡ Extraer datos con IA</button>
-      </div>
-
-      <!-- Extracción -->
-      <div id="section-extract" style="display:none">
-        <h3 style="margin-top:20px">🔍 Datos extraídos</h3>
-        <div id="missing-alert" class="missing-list" style="display:none"></div>
-
-        <div class="extract-card">
-          <div class="form-group">
-            <label>Activo</label>
-            <input id="fld-activo" placeholder="Nombre del equipo">
-          </div>
-
-          <h4 style="margin:16px 0 8px">Componentes</h4>
-          <table class="comp-table">
-            <thead><tr><th>Componente</th><th>Cantidad</th><th>Lubricante</th><th>Frecuencia</th><th>Ubicación</th></tr></thead>
-            <tbody id="comp-tbody"></tbody>
-          </table>
-          <button class="btn btn-outline btn-sm" onclick="addComponentRow()">+ Componente</button>
-
-          <div class="form-group" style="margin-top:12px">
-            <label>Observaciones generales</label>
-            <textarea id="fld-obs" placeholder="Notas adicionales..."></textarea>
-          </div>
-        </div>
-
-        <button class="btn btn-green" onclick="generarExcel()">⬇ Descargar Excel</button>
-      </div>
-    </div>
-
-  </main>
-
-  </div><!-- /main-content -->
-
-  <!-- Modal: Nuevo Proyecto -->
-  <div class="modal-overlay" id="modal-proyecto">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>Nuevo Proyecto</h2>
-        <button class="modal-close" onclick="toggleModal('modal-proyecto')">×</button>
-      </div>
-      <div class="form-group">
-        <label>Nombre del proyecto</label>
-        <input id="new-project-name" placeholder="Ej: Planta Norte, Ruta Lubricación 2026...">
-      </div>
-      <button class="btn btn-primary" onclick="crearProyecto()">Crear Proyecto</button>
-    </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tab-audio" onclick="switchTab('tab-audio')">🎤 Audio</button>
+    <button class="tab-btn" data-tab="tab-files" onclick="switchTab('tab-files')">📁 Archivos</button>
+    <button class="tab-btn" data-tab="tab-chat" onclick="switchTab('tab-chat')">💬 Chat</button>
   </div>
 
-  <footer class="footer">
-    <strong>INGELUBSA S.A.S.</strong> © 2026 — Lubricación y Confiabilidad Industrial Colombia
-  </footer>
-
-  <!-- Modal: Settings -->
-  <div class="modal-overlay" id="modal-settings">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>⚙️ Configuración</h2>
-        <button class="modal-close" onclick="toggleModal('modal-settings')">×</button>
-      </div>
-      <div class="settings-row">
-        <label>Deepgram API Key</label>
-        <input id="set-deepgram" type="password" placeholder="API Key para transcripción">
-      </div>
-      <div class="settings-row">
-        <label>Claude API Key</label>
-        <input id="set-claude" type="password" placeholder="sk-ant-api03-...">
-      </div>
-      <div class="settings-row">
-        <label>Gmail Usuario</label>
-        <input id="set-gmail-user" placeholder="correo@gmail.com">
-      </div>
-      <div class="settings-row">
-        <label>Gmail Contraseña (app)</label>
-        <input id="set-gmail-pass" type="password" placeholder="abcd efgh ijkl mnop">
-      </div>
-      <div class="settings-row">
-        <label>Email destino</label>
-        <input id="set-email-to" placeholder="destino@correo.com">
-      </div>
-      <div class="settings-row">
-        <label>Ollama Model</label>
-        <input id="set-ollama" placeholder="qwen2.5">
-      </div>
-      <div style="margin-top:16px;display:flex;gap:10px">
-        <button class="btn btn-primary" onclick="saveSettings()">💾 Guardar</button>
-        <span id="settings-msg" style="font-size:13px;padding-top:8px"></span>
-      </div>
-    </div>
+  <!-- TAB: Audio -->
+  <div id="tab-audio" class="tab-content">
+    <div id="banner" class="banner"></div>
+    <div class="upload-area" id="upload-area" onclick="document.getElementById('audio-file').click()"><div class="icon">🎤</div><p><strong>Subí un audio de campo</strong> o arrastralo aquí</p><p style="font-size:12px;margin-top:4px">MP3, WAV, WebM, M4A</p></div>
+    <input type="file" id="audio-file" accept="audio/*" style="display:none" onchange="handleAudio(this.files[0])">
+    <div id="section-transcript" style="display:none"><h3 style="margin-top:20px">📝 Transcripción</h3><div class="transcript-box" id="transcript-text"></div><button class="btn btn-primary" id="btn-extract" onclick="extraerDatos()">⚡ Extraer datos con IA</button></div>
+    <div id="section-extract" style="display:none"><h3 style="margin-top:20px">🔍 Datos extraídos</h3><div id="missing-alert" class="missing-list" style="display:none"></div><div class="extract-card"><div class="form-group"><label>Activo</label><input id="fld-activo" placeholder="Nombre del equipo"></div><h4 style="margin:16px 0 8px">Componentes</h4><table class="comp-table"><thead><tr><th>Componente</th><th>Cantidad</th><th>Lubricante</th><th>Frecuencia</th><th>Ubicación</th></tr></thead><tbody id="comp-tbody"></tbody></table><button class="btn btn-outline btn-sm" onclick="addComponentRow()">+ Componente</button><div class="form-group" style="margin-top:12px"><label>Observaciones generales</label><textarea id="fld-obs" placeholder="Notas adicionales..."></textarea></div></div><button class="btn btn-green" onclick="generarExcel()">⬇ Descargar Excel</button></div>
   </div>
 
-</div><!-- /app-wrapper -->
+  <!-- TAB: Archivos -->
+  <div id="tab-files" class="tab-content" style="display:none">
+    <div class="file-tree"><div class="file-tree-header"><button class="btn btn-primary btn-sm" onclick="newFolder()">+ Nueva Carpeta</button><button class="btn btn-outline btn-sm" onclick="document.getElementById('file-upload').click()">⬆ Subir Archivo</button></div><div id="file-list"><p style="padding:20px;color:#9CA3AF;text-align:center">Cargando...</p></div></div>
+    <input type="file" id="file-upload" style="display:none" onchange="uploadFile(this.files[0])">
+  </div>
+
+  <!-- TAB: Chat -->
+  <div id="tab-chat" class="tab-content" style="display:none">
+    <div class="chat-container"><div class="chat-messages" id="chat-msgs"><div class="chat-msg assistant">🤖 Hola, soy LUBIA. Preguntame sobre este proyecto. Escribí <b>@</b> para citar un archivo del proyecto.</div></div><div class="chat-input-wrap" style="position:relative"><div class="chat-attachments" id="chat-attach"></div><div class="at-picker" id="at-picker"></div><div class="chat-row"><input id="chat-input" placeholder="Escribí @ para citar un archivo..." onkeydown="handleChatKey(event)" oninput="handleAtInput()"><button onclick="sendChat()">➤</button></div></div></div>
+  </div>
+</div>
+
+</main></div>
+
+<!-- Modal: Nuevo Proyecto -->
+<div class="modal-overlay" id="modal-proyecto"><div class="modal"><div class="modal-header"><h2>Nuevo Proyecto</h2><button class="modal-close" onclick="toggleModal('modal-proyecto')">×</button></div><div class="form-group"><label>Nombre del proyecto</label><input id="new-project-name" placeholder="Ej: Planta Norte, Ruta Lubricación 2026..."></div><button class="btn btn-primary" onclick="crearProyecto()">Crear Proyecto</button></div></div>
+
+<!-- Modal: Settings -->
+<div class="modal-overlay" id="modal-settings"><div class="modal"><div class="modal-header"><h2>⚙️ Configuración</h2><button class="modal-close" onclick="toggleModal('modal-settings')">×</button></div><div class="settings-row"><label>Deepgram API Key</label><input id="set-deepgram" type="password" placeholder="API Key"></div><div class="settings-row"><label>Claude API Key</label><input id="set-claude" type="password" placeholder="sk-ant-api03-..."></div><div class="settings-row"><label>Gmail Usuario</label><input id="set-gmail-user" placeholder="correo@gmail.com"></div><div class="settings-row"><label>Gmail Contraseña (app)</label><input id="set-gmail-pass" type="password" placeholder="abcd efgh ijkl mnop"></div><div class="settings-row"><label>Email destino</label><input id="set-email-to" placeholder="destino@correo.com"></div><div class="settings-row"><label>Ollama Model</label><input id="set-ollama" placeholder="qwen2.5"></div><div style="margin-top:16px;display:flex;gap:10px"><button class="btn btn-primary" onclick="saveSettings()">💾 Guardar</button><span id="settings-msg" style="font-size:13px;padding-top:8px"></span></div></div></div>
+
+<footer class="footer"><strong>INGELUBSA S.A.S.</strong> © 2026 — Lubricación y Confiabilidad Industrial Colombia</footer>
+</div>
 
 <script>
-// ── Estado ─────────────────────────────────────────────
-let projects = [];
-let currentProject = null;
-let currentTranscription = null;
-let currentData = null;
+// ── State ──────────────────────────────────
+let projects=[],currentProject=null,currentTranscription=null,currentData=null;
+let chatMessages=[],chatAttachments=[];
+let atPickerFiles=[];
 
-// ── Inicio ─────────────────────────────────────────────
-async function loadProjects() {
-  const res = await fetch("/api/projects");
-  projects = await res.json();
-  renderHome();
-}
-loadProjects();
+// ── Navigation ─────────────────────────────
+async function loadProjects(){const r=await fetch("/api/projects");projects=await r.json();renderHome()}
+function renderHome(){const g=document.getElementById("project-grid"),e=document.getElementById("empty-state");if(projects.length===0){g.innerHTML="";e.style.display="block"}else{e.style.display="none";g.innerHTML=projects.map(p=>`<div class="card" onclick="openProject('${p.id}')"><div class="card-icon">🏭</div><h3>${esc(p.name)}</h3><div class="card-meta">Creado ${new Date(p.createdAt).toLocaleDateString("es-CO")}</div><div class="card-footer"><span class="card-link">Entrar →</span></div></div>`).join("")}}loadProjects();
 
-function renderHome() {
-  const grid = document.getElementById("project-grid");
-  const empty = document.getElementById("empty-state");
+function goHome(){document.getElementById("view-home").style.display="block";document.getElementById("view-project").style.display="none";currentProject=null;loadProjects()}
+function openProject(id){currentProject=projects.find(p=>p.id===id);document.getElementById("view-home").style.display="none";document.getElementById("view-project").style.display="block";document.getElementById("project-title").textContent=currentProject.name;switchTab("tab-audio");resetAudio();loadFiles();loadChat()}
 
-  if (projects.length === 0) {
-    grid.innerHTML = "";
-    empty.style.display = "block";
-  } else {
-    empty.style.display = "none";
-    grid.innerHTML = projects.map(p => `
-      <div class="card" onclick="openProject('${p.id}')">
-        <div class="card-icon">🏭</div>
-        <h3>${esc(p.name)}</h3>
-        <div class="card-meta">Creado ${new Date(p.createdAt).toLocaleDateString("es-CO")}</div>
-        <div class="card-footer">
-          <span class="card-link">Entrar →</span>
-        </div>
-      </div>
-    `).join("");
-  }
-}
+function openAudioTab(){switchTab("tab-audio");resetAudio()}
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
 
-function esc(s) {
-  const d = document.createElement("div");
-  d.textContent = s;
-  return d.innerHTML;
-}
+// ── Tabs ───────────────────────────────────
+function switchTab(id){document.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));document.querySelectorAll(".tab-content").forEach(c=>c.style.display=c.id===id?"block":"none")}
 
-// ── Navegación ─────────────────────────────────────────
-function goHome() {
-  document.getElementById("view-home").style.display = "block";
-  document.getElementById("view-project").style.display = "none";
-  currentProject = null;
-  loadProjects();
-}
+// ── Audio (existing) ───────────────────────
+function resetAudio(){currentTranscription=null;currentData=null;hideBanner();document.getElementById("section-transcript").style.display="none";document.getElementById("section-extract").style.display="none";document.getElementById("transcript-text").textContent="";document.getElementById("comp-tbody").innerHTML="";document.getElementById("fld-activo").value="";document.getElementById("fld-obs").value="";document.getElementById("missing-alert").style.display="none";document.getElementById("btn-extract").disabled=false;document.getElementById("upload-area").style.opacity="1"}
+async function handleAudio(file){if(!file)return;showBanner("Transcribiendo audio...","processing");document.getElementById("upload-area").style.opacity="0.5";const f=new FormData();f.append("audio",file);const r=await fetch("/api/transcribe",{method:"POST",body:f});const d=await r.json();if(d.error){showBanner(d.error,"error");return}currentTranscription=d.transcription;document.getElementById("transcript-text").textContent=currentTranscription;document.getElementById("section-transcript").style.display="block";hideBanner()}
+async function extraerDatos(){if(!currentTranscription)return;showBanner("Claude analizando...","processing");document.getElementById("btn-extract").disabled=true;const r=await fetch("/api/extraer",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({transcription:currentTranscription,template:"ruta_lubricacion"})});currentData=await r.json();if(currentData.error){showBanner(currentData.error,"error");return}document.getElementById("fld-activo").value=currentData.activo||"";const tb=document.getElementById("comp-tbody");tb.innerHTML="";(currentData.componentes||[]).forEach(c=>addComponentRow(c.nombre||"",c.cantidad||"",c.lubricante||"",c.frecuencia||"",c.ubicacion||""));const fa=currentData.faltantes||[],pr=currentData.preguntas||[],md=document.getElementById("missing-alert");if(fa.length||pr.length){md.style.display="block";md.innerHTML=`<h4>⚠️ Datos faltantes</h4>${fa.map(f=>`<li>${esc(f)}</li>`).join("")}${pr.length?`<p style="margin-top:8px;font-weight:600">Preguntas:</p>`:""}${pr.map(q=>`<li style="color:#991B1B">${esc(q)}</li>`).join("")}`}else{md.style.display="none"}document.getElementById("section-extract").style.display="block";hideBanner()}
+function addComponentRow(n="",c="",l="",f="",u=""){const t=document.getElementById("comp-tbody"),r=t.insertRow();r.innerHTML=`<td><input value="${esc(n)}" placeholder="Nombre"></td><td><input value="${esc(c)}" style="width:70px"></td><td><input value="${esc(l)}" placeholder="VG EP 2..."></td><td><input value="${esc(f)}" placeholder="C/30 días..."></td><td><input value="${esc(u)}" placeholder="Nave 3..."></td>`}
+async function generarExcel(){const a=document.getElementById("fld-activo").value,obs=document.getElementById("fld-obs").value,comps=[],rows=document.getElementById("comp-tbody").rows;for(const r of rows){const c=r.querySelectorAll("input");if(c[0]&&c[0].value.trim())comps.push({nombre:c[0].value,cantidad:c[1].value,lubricante:c[2].value,frecuencia:c[3].value,ubicacion:c[4].value})}showBanner("Generando Excel...","processing");const res=await fetch("/api/generar-excel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:{activo:a,componentes:comps,observaciones:obs}})});if(!res.ok){const er=await res.json();showBanner(er.error||"Error","error");return}const blob=await res.blob(),url=URL.createObjectURL(blob),dl=document.createElement("a");dl.href=url;dl.download=`lubia_${a||"ruta"}_${Date.now()}.xlsx`;dl.click();URL.revokeObjectURL(url);showBanner("✅ Excel descargado","success")}
 
-function openProject(id) {
-  currentProject = projects.find(p => p.id === id);
-  document.getElementById("view-home").style.display = "none";
-  document.getElementById("view-project").style.display = "block";
-  document.getElementById("project-title").textContent = currentProject.name;
-  resetProject();
-}
+// ── Proyectos ──────────────────────────────
+async function crearProyecto(){const n=document.getElementById("new-project-name").value.trim();if(!n)return alert("Poné un nombre");const r=await fetch("/api/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n})});const p=await r.json();projects.push(p);renderHome();document.getElementById("new-project-name").value="";toggleModal("modal-proyecto")}
+function toggleModal(id){document.getElementById(id).classList.toggle("active")}
 
-function resetProject() {
-  currentTranscription = null;
-  currentData = null;
-  hideBanner();
-  document.getElementById("section-transcript").style.display = "none";
-  document.getElementById("section-extract").style.display = "none";
-  document.getElementById("transcript-text").textContent = "";
-  document.getElementById("comp-tbody").innerHTML = "";
-  document.getElementById("fld-activo").value = "";
-  document.getElementById("fld-obs").value = "";
-  document.getElementById("missing-alert").style.display = "none";
-  document.getElementById("btn-extract").disabled = false;
-  document.getElementById("upload-area").style.opacity = "1";
-}
+// ── Files ──────────────────────────────────
+async function loadFiles(){if(!currentProject)return;const r=await fetch(`/api/projects/${currentProject.id}/files`);const d=await r.json();renderFileTree(d.folders||[],d.files||[])}
+function renderFileTree(folders,files){const el=document.getElementById("file-list");if(folders.length===0&&files.length===0){el.innerHTML='<p style="padding:20px;color:#9CA3AF;text-align:center">Sin archivos. Creá una carpeta o subí un archivo.</p>';return}let h="";for(const f of folders.filter(x=>!x.parentId))h+=folderHTML(f,folders,files);const rootFiles=files.filter(x=>!x.folderId);for(const f of rootFiles)h+=fileHTML(f);el.innerHTML=h}
+function folderHTML(f,allFolders,allFiles){const subs=allFolders.filter(x=>x.parentId===f.id),subFiles=allFiles.filter(x=>x.folderId===f.id);let h=`<div class="tree-item" onclick="event.stopPropagation();this.nextElementSibling?.classList.toggle('hidden')">`+`<span class="folder-toggle">▼</span><span class="icon">📂</span><span class="name">${esc(f.name)}</span>`+`<button class="btn btn-xs btn-red" onclick="event.stopPropagation();delFolder('${f.id}')" title="Eliminar carpeta">✕</button></div>`;h+='<div class="folder-indent">';for(const sf of subs)h+=folderHTML(sf,allFolders,allFiles);for(const sf of subFiles)h+=fileHTML(sf);h+='</div>';return h}
+function fileHTML(f){const ico=f.mimetype?.startsWith("image")?"🖼️":f.mimetype?.includes("pdf")?"📄":f.mimetype?.includes("word")?"📝":"📎";const kb=(f.size/1024).toFixed(1);return`<div class="tree-item"><span class="icon">${ico}</span><span class="name">${esc(f.name)}</span><span class="meta">${kb} KB</span><button class="btn btn-xs btn-red" onclick="delFile('${f.id}')">✕</button></div>`}
+async function newFolder(){const n=prompt("Nombre de la carpeta:");if(!n)return;await fetch(`/api/projects/${currentProject.id}/folders`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n})});loadFiles()}
+async function delFolder(id){if(!confirm("¿Eliminar carpeta?"))return;await fetch(`/api/projects/${currentProject.id}/folders/${id}`,{method:"DELETE"});loadFiles()}
+async function uploadFile(file){if(!file)return;const f=new FormData();f.append("file",file);await fetch(`/api/projects/${currentProject.id}/files`,{method:"POST",body:f});loadFiles();document.getElementById("file-upload").value=""}
+async function delFile(id){if(!confirm("¿Eliminar archivo?"))return;await fetch(`/api/projects/${currentProject.id}/files/${id}`,{method:"DELETE"});loadFiles()}
 
-// ── Proyectos ──────────────────────────────────────────
-async function crearProyecto() {
-  const name = document.getElementById("new-project-name").value.trim();
-  if (!name) return alert("Poné un nombre");
-  const res = await fetch("/api/projects", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name })
-  });
-  const p = await res.json();
-  projects.push(p);
-  renderHome();
-  document.getElementById("new-project-name").value = "";
-  toggleModal("modal-proyecto");
-}
+// ── Chat ───────────────────────────────────
+function loadChat(){const key=`chat_${currentProject.id}`;chatMessages=JSON.parse(localStorage.getItem(key)||"[]");chatAttachments=[];renderChat();document.getElementById("chat-attach").innerHTML=""}
+function renderChat(){const el=document.getElementById("chat-msgs");if(chatMessages.length===0){el.innerHTML='<div class="chat-msg assistant">🤖 Hola, soy LUBIA. Preguntame sobre este proyecto. Escribí <b>@</b> para citar un archivo.</div>';return}el.innerHTML=chatMessages.map(m=>{let at="";if(m.attachments?.length){at='<div class="attach">';for(const a of m.attachments)at+=`📎 ${esc(a.name)} `;at+='</div>'}return`<div class="chat-msg ${m.role}">${esc(m.content)}${at}</div>`}).join("");el.scrollTop=el.scrollHeight}
+function handleChatKey(e){if(e.key==="Enter"){e.preventDefault();sendChat()}else if(e.key==="ArrowDown"||e.key==="ArrowUp"){navigateAtPicker(e.key==="ArrowDown"?1:-1)}else if(e.key==="Escape"){hideAtPicker()}}
+function handleAtInput(){const inp=document.getElementById("chat-input");const val=inp.value;const pos=inp.selectionStart;const lastAt=val.lastIndexOf("@",pos-1);if(lastAt>=0&&(lastAt===0||val[lastAt-1]===" "||val[lastAt-1]==="\n")){const q=val.slice(lastAt+1,pos).toLowerCase();showAtPicker(q)}else{hideAtPicker()}}
+async function showAtPicker(q){const r=await fetch(`/api/projects/${currentProject.id}/files`);const d=await r.json();const allFiles=[];function collect(files,prefix){for(const f of files)allFiles.push({...f,path:prefix+"/"+f.name})}function scan(folders,files,prefix){for(const f of folders){collect(files.filter(x=>x.folderId===f.id),prefix+f.name);scan(folders,files.filter(x=>x.folderId===f.id),prefix+f.name+"/")}}collect(d.files.filter(x=>!x.folderId),"/");scan(d.folders||[],d.files||[],"/");atPickerFiles=allFiles.filter(x=>x.name.toLowerCase().includes(q));const el=document.getElementById("at-picker");if(atPickerFiles.length===0){el.style.display="none";return}el.innerHTML=atPickerFiles.map((f,i)=>`<div class="at-item${i===0?' sel':''}" onclick="selectAtFile(${i})"><span class="icon">📎</span>${esc(f.name)}<span style="color:#9CA3AF;margin-left:auto;font-size:11px">${esc(f.path)}</span></div>`).join("");el.style.display="block";el.querySelector(".sel")?.scrollIntoView({block:"nearest"})}
+function hideAtPicker(){document.getElementById("at-picker").style.display="none"}
+let atSelIdx=0;
+function navigateAtPicker(dir){const el=document.getElementById("at-picker");if(el.style.display==="none")return;const items=el.querySelectorAll(".at-item");items.forEach(i=>i.classList.remove("sel"));atSelIdx=Math.max(0,Math.min(items.length-1,atSelIdx+dir));items[atSelIdx]?.classList.add("sel");items[atSelIdx]?.scrollIntoView({block:"nearest"})}
+function selectAtFile(idx){const f=atPickerFiles[idx];if(!f)return;addChatAttachment(f);const inp=document.getElementById("chat-input");const val=inp.value;const pos=inp.selectionStart;const lastAt=val.lastIndexOf("@",pos-1);if(lastAt>=0){inp.value=val.slice(0,lastAt)+val.slice(pos)}hideAtPicker();inp.focus()}
+function addChatAttachment(f){if(chatAttachments.find(x=>x.id===f.id))return;chatAttachments.push(f);document.getElementById("chat-attach").innerHTML=chatAttachments.map(a=>`<span class="chat-chip">📎 ${esc(a.name)} <span class="remove" onclick="removeAttachment('${a.id}')">×</span></span>`).join("")}
+function removeAttachment(id){chatAttachments=chatAttachments.filter(x=>x.id!==id);document.getElementById("chat-attach").innerHTML=chatAttachments.map(a=>`<span class="chat-chip">📎 ${esc(a.name)} <span class="remove" onclick="removeAttachment('${a.id}')">×</span></span>`).join("")}
+function sendChat(){const inp=document.getElementById("chat-input");const txt=inp.value.trim();if(!txt&&chatAttachments.length===0)return;const msg={role:"user",content:txt,attachments:[...chatAttachments]};chatMessages.push(msg);chatMessages.push({role:"assistant",content:"🤖 (Chat no conectado a IA aún. Este es un placeholder. Cuando conectemos Claude, analizará tus archivos adjuntos.)",attachments:[]});saveChat();inp.value="";chatAttachments=[];document.getElementById("chat-attach").innerHTML="";renderChat()}
+function saveChat(){localStorage.setItem(`chat_${currentProject.id}`,JSON.stringify(chatMessages))}
 
-function toggleModal(id) {
-  document.getElementById(id).classList.toggle("active");
-}
+// ── Settings ───────────────────────────────
+async function loadSettings(){const r=await fetch("/api/settings");const s=await r.json();document.getElementById("set-deepgram").value=s.DEEPGRAM_API_KEY||"";document.getElementById("set-claude").value=s.CLAUDE_API_KEY||"";document.getElementById("set-gmail-user").value=s.GMAIL_USER||"";document.getElementById("set-gmail-pass").value=s.GMAIL_PASS||"";document.getElementById("set-email-to").value=s.EMAIL_TO||"";document.getElementById("set-ollama").value=s.OLLAMA_MODEL||""}loadSettings();
+async function saveSettings(){const d={DEEPGRAM_API_KEY:document.getElementById("set-deepgram").value.trim(),CLAUDE_API_KEY:document.getElementById("set-claude").value.trim(),GMAIL_USER:document.getElementById("set-gmail-user").value.trim(),GMAIL_PASS:document.getElementById("set-gmail-pass").value.trim(),EMAIL_TO:document.getElementById("set-email-to").value.trim(),OLLAMA_MODEL:document.getElementById("set-ollama").value.trim()};const r=await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});const j=await r.json();const m=document.getElementById("settings-msg");if(j.ok){m.textContent="✅ Guardado";m.style.color="#22C55E"}else{m.textContent="❌ Error";m.style.color="#EF4444"}setTimeout(()=>{m.textContent=""},3000)}
 
-// ── Audio upload ───────────────────────────────────────
-async function handleAudio(file) {
-  if (!file) return;
-  showBanner("Transcribiendo audio...", "processing");
-  document.getElementById("upload-area").style.opacity = "0.5";
-
-  const form = new FormData();
-  form.append("audio", file);
-
-  const res = await fetch("/api/transcribe", { method: "POST", body: form });
-  const data = await res.json();
-
-  if (data.error) { showBanner(data.error, "error"); return; }
-
-  currentTranscription = data.transcription;
-  document.getElementById("transcript-text").textContent = currentTranscription;
-  document.getElementById("section-transcript").style.display = "block";
-  hideBanner();
-}
-
-// ── Extraer con Claude ─────────────────────────────────
-async function extraerDatos() {
-  if (!currentTranscription) return;
-  showBanner("Claude analizando...", "processing");
-  document.getElementById("btn-extract").disabled = true;
-
-  const res = await fetch("/api/extraer", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transcription: currentTranscription, template: "ruta_lubricacion" })
-  });
-  currentData = await res.json();
-
-  if (currentData.error) { showBanner(currentData.error, "error"); return; }
-
-  // Llenar formulario
-  document.getElementById("fld-activo").value = currentData.activo || "";
-
-  const tbody = document.getElementById("comp-tbody");
-  tbody.innerHTML = "";
-  const comps = currentData.componentes || [];
-  for (const c of comps) {
-    addComponentRow(c.nombre || "", c.cantidad || "", c.lubricante || "", c.frecuencia || "", c.ubicacion || "");
-  }
-
-  // Mostrar faltantes
-  const faltantes = currentData.faltantes || [];
-  const preguntas = currentData.preguntas || [];
-  const missingDiv = document.getElementById("missing-alert");
-  if (faltantes.length > 0 || preguntas.length > 0) {
-    missingDiv.style.display = "block";
-    missingDiv.innerHTML = `
-      <h4>⚠️ Datos faltantes</h4>
-      ${faltantes.map(f => `<li>${esc(f)}</li>`).join("")}
-      ${preguntas.length > 0 ? `<p style="margin-top:8px;font-weight:600">Preguntas para completar:</p>` : ""}
-      ${preguntas.map(q => `<li style="color:#991B1B">${esc(q)}</li>`).join("")}
-    `;
-  } else {
-    missingDiv.style.display = "none";
-  }
-
-  document.getElementById("section-extract").style.display = "block";
-  hideBanner();
-}
-
-function addComponentRow(nombre="", cantidad="", lubricante="", frecuencia="", ubicacion="") {
-  const tbody = document.getElementById("comp-tbody");
-  const row = tbody.insertRow();
-  row.innerHTML = `
-    <td><input value="${esc(nombre)}" placeholder="Nombre"></td>
-    <td><input value="${esc(cantidad)}" placeholder="Cant." style="width:70px"></td>
-    <td><input value="${esc(lubricante)}" placeholder="VG EP 2..."></td>
-    <td><input value="${esc(frecuencia)}" placeholder="C/ 30 días..."></td>
-    <td><input value="${esc(ubicacion)}" placeholder="Nave 3..."></td>
-  `;
-}
-
-// ── Excel ──────────────────────────────────────────────
-async function generarExcel() {
-  const activo = document.getElementById("fld-activo").value;
-  const obs = document.getElementById("fld-obs").value;
-
-  const componentes = [];
-  const rows = document.getElementById("comp-tbody").rows;
-  for (const row of rows) {
-    const cells = row.querySelectorAll("input");
-    if (cells[0] && cells[0].value.trim()) {
-      componentes.push({
-        nombre: cells[0].value, cantidad: cells[1].value,
-        lubricante: cells[2].value, frecuencia: cells[3].value,
-        ubicacion: cells[4].value,
-      });
-    }
-  }
-
-  showBanner("Generando Excel...", "processing");
-  const res = await fetch("/api/generar-excel", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data: { activo, componentes, observaciones: obs }, template: "ruta_lubricacion" })
-  });
-
-  if (!res.ok) {
-    const err = await res.json();
-    showBanner(err.error || "Error", "error");
-    return;
-  }
-
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `lubia_${activo || "ruta"}_${Date.now()}.xlsx`;
-  a.click();
-  URL.revokeObjectURL(url);
-
-  showBanner("✅ Excel descargado con éxito", "success");
-}
-
-// ── UI helpers ─────────────────────────────────────────
-function showBanner(msg, type) {
-  const b = document.getElementById("banner");
-  b.className = `banner ${type}`;
-  b.innerHTML = (type === "processing" ? '<span class="spinner"></span>' : "") + msg;
-}
-function hideBanner() {
-  document.getElementById("banner").className = "banner";
-  document.getElementById("banner").innerHTML = "";
-}
-
-// ── Drag & drop ────────────────────────────────────────
-const uploadArea = document.getElementById("upload-area");
-uploadArea.addEventListener("dragover", e => { e.preventDefault(); uploadArea.classList.add("dragover"); });
-uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
-uploadArea.addEventListener("drop", e => {
-  e.preventDefault();
-  uploadArea.classList.remove("dragover");
-  const file = e.dataTransfer.files[0];
-  if (file) handleAudio(file);
-});
-
-// ── Settings ───────────────────────────────────────────
-async function loadSettings() {
-  const res = await fetch("/api/settings");
-  const s = await res.json();
-  document.getElementById("set-deepgram").value = s.DEEPGRAM_API_KEY || "";
-  document.getElementById("set-claude").value = s.CLAUDE_API_KEY || "";
-  document.getElementById("set-gmail-user").value = s.GMAIL_USER || "";
-  document.getElementById("set-gmail-pass").value = s.GMAIL_PASS || "";
-  document.getElementById("set-email-to").value = s.EMAIL_TO || "";
-  document.getElementById("set-ollama").value = s.OLLAMA_MODEL || "";
-}
-loadSettings();
-
-async function saveSettings() {
-  const data = {
-    DEEPGRAM_API_KEY: document.getElementById("set-deepgram").value.trim(),
-    CLAUDE_API_KEY: document.getElementById("set-claude").value.trim(),
-    GMAIL_USER: document.getElementById("set-gmail-user").value.trim(),
-    GMAIL_PASS: document.getElementById("set-gmail-pass").value.trim(),
-    EMAIL_TO: document.getElementById("set-email-to").value.trim(),
-    OLLAMA_MODEL: document.getElementById("set-ollama").value.trim(),
-  };
-  const res = await fetch("/api/settings", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  const r = await res.json();
-  const msg = document.getElementById("settings-msg");
-  if (r.ok) { msg.textContent = "✅ Guardado"; msg.style.color = "#22C55E"; }
-  else { msg.textContent = "❌ Error"; msg.style.color = "#EF4444"; }
-  setTimeout(() => { msg.textContent = ""; }, 3000);
-}
+// ── UI ─────────────────────────────────────
+function showBanner(m,t){const b=document.getElementById("banner");b.className=`banner ${t}`;b.innerHTML=(t==="processing"?'<span class="spinner"></span>':"")+m}
+function hideBanner(){const b=document.getElementById("banner");b.className="banner";b.innerHTML=""}
+const ua=document.getElementById("upload-area");if(ua){ua.addEventListener("dragover",e=>{e.preventDefault();ua.classList.add("dragover")});ua.addEventListener("dragleave",()=>ua.classList.remove("dragover"));ua.addEventListener("drop",e=>{e.preventDefault();ua.classList.remove("dragover");const f=e.dataTransfer.files[0];if(f)handleAudio(f)})}
+document.getElementById("at-picker").addEventListener("click",e=>{const it=e.target.closest(".at-item");if(!it)return;const idx=Array.from(document.getElementById("at-picker").querySelectorAll(".at-item")).indexOf(it);selectAtFile(idx)})
 </script>
 </body>
 </html>

@@ -54,9 +54,35 @@ Si el AirPort ya está conectado al router y encendido, pasá al 1.2.
 
 ---
 
-## Paso 2 — Montar el disco AirPort en el servidor LUBIA
+## Paso 2 — Servidor local requerido
 
-### 2.1 Si LUBIA corre en Windows (PC local)
+> ⚠️ **Importante: se necesita un servidor local en la oficina para la conexión con el AirPort.**
+
+### ¿Por qué?
+
+| Entorno | ¿Ve el AirPort? | ¿Por qué? |
+|---|---|---|
+| **Render (nube)** | ❌ No | Render está en un datacenter en Oregón, EE.UU. No puede acceder a `192.168.1.50` porque es una IP privada de la red local de la oficina. |
+| **Servidor local (oficina)** | ✅ Sí | Una PC o laptop en la misma red WiFi de la oficina sí tiene acceso directo al AirPort por SMB. |
+
+**Flujo:**
+```
+cPanel (internet) ──IMAP──→ Servidor local (oficina) ──SMB──→ AirPort Extreme (red local)
+```
+
+LUBIA en Render sigue funcionando para todo lo demás (dashboard, proyectos, audio, chat, archivos). El módulo de archivo de correos corre en el servidor local de la oficina porque es el único que tiene acceso físico al disco AirPort.
+
+### Requisitos del servidor local
+
+| Requisito | Detalle |
+|---|---|
+| Hardware | Cualquier PC o laptop de la oficina (4GB RAM mínimo) |
+| Sistema | Windows, Linux o macOS |
+| Node.js | v20 o superior |
+| Conexión | Mismo WiFi/router que el AirPort Extreme |
+| Funcionamiento | Solo se necesita encendida al ejecutar el archivo de correos (cada 3 meses aprox.) |
+
+### 2.1 Montar el disco AirPort (Windows)
 
 ```powershell
 # Mapear como unidad de red (letra Z:)
@@ -71,81 +97,99 @@ Si no sabés la clave del AirPort:
 - O es la contraseña del WiFi
 - Para verla: AirPort Utility → AirPort → Editar → pestaña "Base Station"
 
-**Checkpoint 2:** `dir Z:\` muestra los archivos del disco AirPort.
-
-### 2.2 Si LUBIA corre en Linux (Render, VPS)
-
-```bash
-# Instalar cliente SMB/CIFS
-sudo apt update && sudo apt install cifs-utils -y
-
-# Crear carpeta de montaje
-sudo mkdir -p /mnt/correos
-
-# Montar el disco
-sudo mount -t cifs //192.168.1.50/DiscoAirport /mnt/correos \
-  -o username=admin,password=TU_CLAVE,vers=3.0
-
-# Verificar
-ls /mnt/correos/
-```
-
-### 2.3 Configurar ruta en LUBIA
-
-En el código de LUBIA, la variable `CORREOS_PATH` apunta a:
-- **Windows:** `Z:\` (unidad mapeada)
-- **Linux:** `/mnt/correos/`
-- Se configura en el Settings de LUBIA (⚙️) como `RUTA_CORREOS`
+**Checkpoint:** `dir Z:\` muestra los archivos del disco AirPort.
 
 ---
 
-## Paso 3 — LUBIA: Código del módulo de correos
+## Paso 3 — Script local de archivo
 
-### 3.1 Instalar dependencia IMAP
+### 3.1 Instalar Node.js en el servidor local
 
-```bash
-cd C:\Users\pipe\Desktop\LuBIA
-npm install imapflow
+Descargar e instalar [Node.js v20+](https://nodejs.org) en la PC de la oficina.
+
+### 3.2 Clonar LUBIA en la PC local
+
+```powershell
+cd C:\
+git clone https://github.com/pipe-2233/LuBIA.git
+cd LuBIA
+npm install
 ```
 
-### 3.2 Endpoint: `POST /api/correos/archivar`
+### 3.3 Script de archivo (`archivar.js`)
 
-El endpoint recibe:
-```json
-{
-  "imapHost": "mail.ingelubsa.com",
-  "imapPort": 993,
-  "imapUser": "correo@ingelubsa.com",
-  "imapPass": "contraseña",
-  "antiguedad": 12,
-  "rutaArchivo": "/mnt/correos",
-  "borrarDespues": false
+El script se conecta a cPanel por IMAP, descarga correos viejos y los guarda en `Z:\correos`.
+
+```javascript
+// archivar.js — Ejecutar: node archivar.js
+import { ImapFlow } from "imapflow";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
+const CONFIG = {
+  imapHost: "mail.ingelubsa.com",
+  imapPort: 993,
+  imapUser: "correo@ingelubsa.com",    // ← cambiar
+  imapPass: "contraseña",               // ← cambiar
+  rutaDisco: "Z:\\correos",
+  antiguedad: 12,                       // meses
+  borrarDespues: false,                 // true para borrar de cPanel
+};
+
+const corte = new Date();
+corte.setMonth(corte.getMonth() - CONFIG.antiguedad);
+
+const client = new ImapFlow({
+  host: CONFIG.imapHost, port: CONFIG.imapPort, secure: true,
+  auth: { user: CONFIG.imapUser, pass: CONFIG.imapPass }, logger: false,
+});
+
+let total = 0, bytes = 0;
+console.log("Conectando a", CONFIG.imapHost, "...");
+await client.connect();
+
+for (const f of await client.list()) {
+  await client.mailboxOpen(f.path);
+  const found = await client.search({ before: corte });
+  if (!found.length) continue;
+  console.log(`${f.path}: ${found.length} correos`);
+
+  for (const seq of found.slice(0, 500)) {
+    try {
+      const msg = await client.fetchOne(seq, { envelope: true, source: true });
+      const d = msg.envelope.date || new Date();
+      const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0");
+      const from = (msg.envelope.from || [{ address: "desconocido" }])[0]?.address || "desconocido";
+      const sub = (msg.envelope.subject || "sin-asunto").slice(0, 60).replace(/[^a-zA-Z0-9 _-]/g, "_");
+
+      const dir = join(CONFIG.rutaDisco, String(y), m, from.replace(/[^a-zA-Z0-9@._-]/g, "_"));
+      mkdirSync(dir, { recursive: true });
+      const fn = `${d.toISOString().split("T")[0]}_${sub}_${seq}.eml`.replace(/[/\\?%*:|"<>]/g, "_");
+      writeFileSync(join(dir, fn), msg.source);
+      total++; bytes += msg.source.length;
+      if (CONFIG.borrarDespues) await client.messageDelete(seq);
+    } catch {}
+  }
 }
+
+await client.logout();
+console.log(`✅ ${total} correos archivados (${(bytes/1024/1024).toFixed(1)} MB) en ${CONFIG.rutaDisco}`);
 ```
 
-Y hace:
-1. Conecta a cPanel por IMAP
-2. Busca correos de más de X meses en INBOX + carpetas
-3. Descarga cada correo como archivo `.eml`
-4. Organiza por ruta: `rutaArchivo/AÑO/MES/remitente@dominio/asunto_uid.eml`
-5. Opcional: borra del servidor cPanel
-6. Devuelve: `{ totalArchivados, espacioEstimado, ruta }`
+### 3.4 Ejecutar
 
-### 3.3 UI en LUBIA: Pestaña "📧 Correos"
+```powershell
+cd C:\LuBIA
+node archivar.js
+```
 
-En el proyecto "Archivo Correos" aparece una nueva sección con:
-- Formulario: host IMAP, usuario, contraseña, antigüedad
-- Selector de ruta (del disco montado)
-- Checkbox "Borrar del servidor al archivar"
-- Botón "Ejecutar Archivo"
-- Resultados: conteo, espacio liberado, ruta de archivos
-
-### 3.4 Vista de correos archivados
-
-Sección para buscar correos ya archivados:
-- Filtro por fecha, remitente, asunto
-- Preview del contenido del `.eml`
-- Exportar/descargar correo individual
+Salida esperada:
+```
+Conectando a mail.ingelubsa.com ...
+INBOX: 342 correos
+Sent: 89 correos
+✅ 431 correos archivados (210.5 MB) en Z:\correos
+```
 
 ---
 
@@ -153,24 +197,31 @@ Sección para buscar correos ya archivados:
 
 ### 4.1 Prueba seca (sin borrar)
 
-1. Abrí LUBIA → proyecto "Archivo Correos"
-2. Completá los datos IMAP
-3. Antigüedad: 12 meses
-4. **Desmarcá** "Borrar del servidor"
-5. Clic en **Ejecutar Archivo**
+1. Asegurate de que `Z:\` esté montado (Paso 2)
+2. En `archivar.js`, verificá que `borrarDespues: false`
+3. Ejecutá: `node archivar.js`
+4. Verificá que `Z:\correos\2024\...` tenga archivos `.eml`
 
-**Checkpoint 3:** El AirPort debe mostrar archivos `.eml` organizados por año/mes.
+**Checkpoint:** El AirPort muestra correos organizados por año/mes/remitente.
 
 ### 4.2 Archivo definitivo
 
-Repetí el paso 4.1 pero **marcando** "Borrar del servidor".
+1. Cambiá `borrarDespues: true` en `archivar.js`
+2. Ejecutá: `node archivar.js`
+3. Verificá cPanel → menos espacio usado
 
-**Checkpoint 4:** cPanel muestra menos espacio usado.
+**Checkpoint:** cPanel liberó espacio.
 
 ### 4.3 Automatización (futuro)
 
-- Agregar endpoint `POST /api/correos/auto` que ejecute el archivo automáticamente
-- Configurar cron job o botón "Auto-Archivar cada 3 meses"
+Crear una tarea programada en Windows para ejecutar `node C:\LuBIA\archivar.js` cada 3 meses:
+
+```powershell
+# PowerShell como admin
+$action = New-ScheduledTaskAction -Execute "node" -Argument "C:\LuBIA\archivar.js"
+$trigger = New-ScheduledTaskTrigger -Monthly -Months 3,6,9,12 -At "02:00AM"
+Register-ScheduledTask -TaskName "LUBIA Archivar Correos" -Action $action -Trigger $trigger
+```
 
 ---
 
@@ -191,38 +242,47 @@ Repetí el paso 4.1 pero **marcando** "Borrar del servidor".
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         FLUJO COMPLETO                               │
+│                         ARQUITECTURA COMPLETA                         │
 │                                                                      │
-│  cPanel (20GB, saturado)                                             │
-│       │                                                              │
-│       │ IMAP (puerto 993, SSL)                                       │
-│       ▼                                                              │
-│  ┌──────────────┐     POST /api/correos/archivar                     │
-│  │   LUBIA      │ ◄──  Formulario en el dashboard                   │
-│  │  (servidor)  │                                                    │
-│  └──────┬───────┘                                                    │
-│         │                                                            │
-│         │ Guarda archivos .eml                                       │
-│         ▼                                                            │
-│  /mnt/correos/                                                       │
-│  ├── 2023/                                                           │
-│  │   ├── 01/                                                         │
-│  │   │   ├── cliente-a@correo.com/                                   │
-│  │   │   │   ├── factura-001.eml                                     │
-│  │   │   │   └── cotizacion-002.eml                                  │
-│  │   │   └── proveedor@correo.com/                                   │
-│  │   └── 02/                                                         │
-│  ├── 2024/                                                           │
-│  └── 2025/                                                           │
-│         │                                                            │
-│         │ Montado vía SMB                                            │
-│         ▼                                                            │
-│  ┌──────────────────┐                                                │
-│  │ AirPort Extreme   │                                               │
-│  │ Disco USB 2TB     │                                               │
-│  └──────────────────┘                                                │
+│  ┌─────────────────────────────────────────┐                        │
+│  │  Render (Nube - Oregón, EE.UU.)         │                        │
+│  │  lubia-bcnm.onrender.com                │                        │
+│  │                                          │                        │
+│  │  ✅ Dashboard web                        │                        │
+│  │  ✅ Proyectos, archivos, chat            │                        │
+│  │  ✅ Audio → Deepgram → Claude → Excel    │                        │
+│  │  ❌ NO accede al AirPort (red distinta)  │                        │
+│  └─────────────────────────────────────────┘                        │
 │                                                                      │
-│  Buscador en LUBIA → buscás por fecha/remitente/asunto → preview     │
-│  cPanel ahora tiene espacio libre                                    │
+│  ┌─────────────────────────────────────────┐                        │
+│  │  Servidor Local (Oficina INGELUBSA)     │                        │
+│  │  PC Windows, misma red WiFi             │                        │
+│  │                                          │                        │
+│  │  Corre script de archivo cada 3 meses:  │                        │
+│  │  1. Conecta a cPanel por IMAP           │                        │
+│  │  2. Descarga correos de +1 año          │                        │
+│  │  3. Guarda .eml en Z:\ (AirPort)        │                        │
+│  │  4. Borra de cPanel                     │                        │
+│  └──────────────┬──────────────────────────┘                        │
+│                 │ SMB (red local)                                    │
+│                 ▼                                                    │
+│  ┌─────────────────────────────────────────┐                        │
+│  │  AirPort Extreme + Disco USB 2TB         │                        │
+│  │  IP: 192.168.1.50                        │                        │
+│  │  Montado como Z:\ en el servidor local   │                        │
+│  │                                          │                        │
+│  │  Correos organizados por:               │                        │
+│  │  Z:\correos\AÑO\MES\remitente\          │                        │
+│  └─────────────────────────────────────────┘                        │
+│                                                                      │
+│  ┌─────────────────────────────────────────┐                        │
+│  │  cPanel (mail.ingelubsa.com)            │                        │
+│  │  20GB → se libera espacio               │                        │
+│  │  Los correos archivados ya no ocupan    │                        │
+│  │  espacio en el hosting                  │                        │
+│  └─────────────────────────────────────────┘                        │
+│                                                                      │
+│  Flujo: cPanel → IMAP → Servidor Local → SMB → AirPort              │
+│         LUBIA (Render) = Dashboard para todo lo demás               │
 └─────────────────────────────────────────────────────────────────────┘
 ```

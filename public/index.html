@@ -183,6 +183,7 @@
     <button class="tab-btn active" data-tab="tab-audio" onclick="switchTab('tab-audio')">🎤 Audio</button>
     <button class="tab-btn" data-tab="tab-files" onclick="switchTab('tab-files')">📁 Archivos</button>
     <button class="tab-btn" data-tab="tab-chat" onclick="switchTab('tab-chat')">💬 Chat</button>
+    <button class="tab-btn" data-tab="tab-correos" onclick="switchTab('tab-correos')">📧 Correos</button>
   </div>
 
   <!-- TAB: Audio -->
@@ -203,6 +204,22 @@
   <!-- TAB: Chat -->
   <div id="tab-chat" class="tab-content" style="display:none">
     <div class="chat-container"><div class="chat-messages" id="chat-msgs"><div class="chat-msg assistant">🤖 Hola, soy LUBIA. Preguntame sobre este proyecto. Escribí <b>@</b> para citar un archivo del proyecto.</div></div><div class="chat-input-wrap" style="position:relative"><div class="chat-attachments" id="chat-attach"></div><div class="at-picker" id="at-picker"></div><div class="chat-row"><input id="chat-input" placeholder="Escribí @ para citar un archivo..." onkeydown="handleChatKey(event)" oninput="handleAtInput()"><button onclick="sendChat()">➤</button></div></div></div>
+  </div>
+
+  <!-- TAB: Correos -->
+  <div id="tab-correos" class="tab-content" style="display:none">
+    <h3 style="margin-bottom:16px">📧 Archivar correos de cPanel</h3>
+    <div class="extract-card">
+      <div class="form-group"><label>Servidor IMAP</label><input id="imap-host" placeholder="mail.ingelubsa.com"></div>
+      <div class="form-group"><label>Puerto IMAP</label><input id="imap-port" value="993" type="number"></div>
+      <div class="form-group"><label>Usuario IMAP</label><input id="imap-user" placeholder="correo@ingelubsa.com"></div>
+      <div class="form-group"><label>Contraseña IMAP</label><input id="imap-pass" type="password" placeholder="contraseña"></div>
+      <div class="form-group"><label>Antigüedad (meses)</label><input id="imap-antiguedad" value="12" type="number"><p style="font-size:11px;color:#6B7280;margin-top:4px">Solo correos de más de X meses</p></div>
+      <div class="form-group"><label>Ruta de archivo</label><input id="imap-ruta" placeholder="/mnt/correos o Z:\correos"><p style="font-size:11px;color:#6B7280;margin-top:4px">Ruta donde está montado el disco AirPort</p></div>
+      <label style="display:flex;align-items:center;gap:8px;margin:12px 0;font-size:13px"><input type="checkbox" id="imap-borrar"> Borrar del servidor después de archivar</label>
+      <button class="btn btn-primary" id="btn-archivar" onclick="archivarCorreos()">📥 Ejecutar Archivo</button>
+    </div>
+    <div id="correos-result" class="banner" style="margin-top:16px"></div>
   </div>
 </div>
 
@@ -280,6 +297,9 @@ function saveChat(){localStorage.setItem(`chat_${currentProject.id}`,JSON.string
 // ── Settings ───────────────────────────────
 async function loadSettings(){const r=await fetch("/api/settings");const s=await r.json();document.getElementById("set-deepgram").value=s.DEEPGRAM_API_KEY||"";document.getElementById("set-claude").value=s.CLAUDE_API_KEY||"";document.getElementById("set-gmail-user").value=s.GMAIL_USER||"";document.getElementById("set-gmail-pass").value=s.GMAIL_PASS||"";document.getElementById("set-email-to").value=s.EMAIL_TO||"";document.getElementById("set-ollama").value=s.OLLAMA_MODEL||""}loadSettings();
 async function saveSettings(){const d={DEEPGRAM_API_KEY:document.getElementById("set-deepgram").value.trim(),CLAUDE_API_KEY:document.getElementById("set-claude").value.trim(),GMAIL_USER:document.getElementById("set-gmail-user").value.trim(),GMAIL_PASS:document.getElementById("set-gmail-pass").value.trim(),EMAIL_TO:document.getElementById("set-email-to").value.trim(),OLLAMA_MODEL:document.getElementById("set-ollama").value.trim()};const r=await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});const j=await r.json();const m=document.getElementById("settings-msg");if(j.ok){m.textContent="✅ Guardado";m.style.color="#22C55E"}else{m.textContent="❌ Error";m.style.color="#EF4444"}setTimeout(()=>{m.textContent=""},3000)}
+
+// ── Correos ────────────────────────────────
+async function archivarCorreos(){const btn=document.getElementById("btn-archivar");btn.disabled=true;btn.textContent="⏳ Archivando...";const el=document.getElementById("correos-result");el.className="banner processing";el.innerHTML='<span class="spinner"></span>Conectando a cPanel...';try{const r=await fetch("/api/correos/archivar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({imapHost:document.getElementById("imap-host").value.trim(),imapPort:parseInt(document.getElementById("imap-port").value)||993,imapUser:document.getElementById("imap-user").value.trim(),imapPass:document.getElementById("imap-pass").value,antiguedad:parseInt(document.getElementById("imap-antiguedad").value)||12,rutaArchivo:document.getElementById("imap-ruta").value.trim(),borrarDespues:document.getElementById("imap-borrar").checked})});const d=await r.json();if(d.error){el.className="banner error";el.innerHTML=d.error}else{el.className="banner success";el.innerHTML=`✅ ${d.totalArchivados} correos archivados (${d.espacioEstimadoMB} MB) en ${d.ruta}`}}catch(e){el.className="banner error";el.innerHTML="Error: "+e.message}btn.disabled=false;btn.textContent="📥 Ejecutar Archivo"}
 
 // ── UI ─────────────────────────────────────
 function showBanner(m,t){const b=document.getElementById("banner");b.className=`banner ${t}`;b.innerHTML=(t==="processing"?'<span class="spinner"></span>':"")+m}

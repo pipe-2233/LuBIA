@@ -6,8 +6,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import ExcelJS from "exceljs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mkdirSync, readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, unlinkSync, readdirSync, statSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { ImapFlow } from "imapflow";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -68,7 +69,7 @@ app.get("/api/settings", (_req, res) => {
 });
 
 app.post("/api/settings", (req, res) => {
-  const allowed = ["DEEPGRAM_API_KEY", "CLAUDE_API_KEY", "GMAIL_USER", "GMAIL_PASS", "EMAIL_TO", "OLLAMA_MODEL"];
+  const allowed = ["DEEPGRAM_API_KEY", "CLAUDE_API_KEY", "GMAIL_USER", "GMAIL_PASS", "EMAIL_TO", "OLLAMA_MODEL", "RUTA_CORREOS"];
   const current = getSettings();
   for (const key of allowed) {
     if (req.body[key] !== undefined) current[key] = req.body[key];
@@ -330,85 +331,158 @@ Extrae datos de pruebas técnicas. Devuelve SOLO JSON:
   return templates[type] || templates.ruta_lubricacion;
 }
 
-// ── Importar correos de cPanel ──────────────────────────
-import { ImapFlow } from "imapflow";
-import { createReadStream, createWriteStream } from "node:fs";
-import { pipeline } from "node:stream/promises";
+// ── Correos: explorador y archivo ──────────────────────
 
+app.get("/api/correos/browse", (req, res) => {
+  try {
+    const ruta = req.query.ruta || getSetting("RUTA_CORREOS") || "/mnt/correos";
+    const subPath = req.query.path || "";
+    const search = (req.query.search || "").toLowerCase();
+    const fullPath = join(ruta, subPath);
+
+    if (!existsSync(fullPath)) {
+      return res.json({ folders: [], files: [], path: subPath, ruta });
+    }
+
+    const entries = readdirSync(fullPath);
+    const folders = [];
+    const files = [];
+
+    for (const name of entries) {
+      const itemPath = join(fullPath, name);
+      try {
+        const stat = statSync(itemPath);
+        if (stat.isDirectory()) {
+          const count = countEmls(itemPath);
+          folders.push({ name, count, path: subPath ? subPath + "/" + name : name });
+        } else if (name.endsWith(".eml")) {
+          // Parseo rápido del asunto y remitente del nombre de archivo
+          const parts = name.replace(".eml", "").split("_");
+          const fecha = parts[0] || "";
+          const asunto = parts.slice(1, -1).join("_") || name;
+          const sizeKB = (stat.size / 1024).toFixed(1);
+          const baseName = name;
+
+          if (search) {
+            if (asunto.toLowerCase().includes(search) || baseName.toLowerCase().includes(search)) {
+              files.push({ name: baseName, fecha, asunto: decodeURIComponent(asunto).slice(0, 80), sizeKB, path: subPath });
+            }
+          } else {
+            files.push({ name: baseName, fecha, asunto: decodeURIComponent(asunto).slice(0, 80), sizeKB, path: subPath });
+          }
+        }
+      } catch {}
+    }
+
+    folders.sort((a, b) => a.name.localeCompare(b.name));
+    files.sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+    res.json({ folders, files, path: subPath, ruta });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+function countEmls(dir) {
+  let count = 0;
+  try {
+    for (const entry of readdirSync(dir)) {
+      const p = join(dir, entry);
+      try {
+        if (statSync(p).isDirectory()) count += countEmls(p);
+        else if (entry.endsWith(".eml")) count++;
+      } catch {}
+    }
+  } catch {}
+  return count;
+}
+
+app.get("/api/correos/read", (req, res) => {
+  try {
+    const ruta = req.query.ruta || getSetting("RUTA_CORREOS") || "/mnt/correos";
+    const file = req.query.file;
+    if (!file) return res.status(400).json({ error: "Falta el nombre del archivo" });
+
+    const fullPath = join(ruta, file);
+    if (!existsSync(fullPath)) return res.status(404).json({ error: "Archivo no encontrado" });
+
+    const raw = readFileSync(fullPath, "utf-8");
+    const headerEnd = raw.indexOf("\r\n\r\n");
+    const headerSection = headerEnd > 0 ? raw.slice(0, headerEnd) : raw.split("\n\n")[0] || raw.slice(0, 1000);
+    const body = headerEnd > 0 ? raw.slice(headerEnd + 4) : "";
+
+    const headers = {};
+    for (const line of headerSection.split(/\r?\n/)) {
+      const idx = line.indexOf(":");
+      if (idx > 0) {
+        const key = line.slice(0, idx).trim();
+        headers[key] = line.slice(idx + 1).trim();
+      }
+    }
+
+    res.json({
+      from: headers["From"] || "",
+      to: headers["To"] || "",
+      subject: headers["Subject"] || "",
+      date: headers["Date"] || "",
+      body: body.slice(0, 5000),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Archivar: IMAP → disco (se mantiene igual)
 app.post("/api/correos/archivar", async (req, res) => {
   try {
     const { imapHost, imapPort = 993, imapUser, imapPass, antiguedad = 12, rutaArchivo, borrarDespues = false } = req.body;
-    if (!imapHost || !imapUser || !imapPass || !rutaArchivo) {
-      return res.status(400).json({ error: "Faltan datos: imapHost, imapUser, imapPass, rutaArchivo" });
-    }
+    if (!imapHost || !imapUser || !imapPass) return res.status(400).json({ error: "Faltan datos IMAP" });
+    const ruta = rutaArchivo || getSetting("RUTA_CORREOS") || "/mnt/correos";
 
     const corte = new Date();
     corte.setMonth(corte.getMonth() - (antiguedad || 12));
 
     const client = new ImapFlow({
-      host: imapHost, port: imapPort || 993,
-      secure: true,
-      auth: { user: imapUser, pass: imapPass },
-      logger: false,
+      host: imapHost, port: imapPort || 993, secure: true,
+      auth: { user: imapUser, pass: imapPass }, logger: false,
     });
 
-    let totalArchivados = 0;
-    let totalBytes = 0;
-
+    let totalArchivados = 0, totalBytes = 0;
     console.log(`[Correos] Conectando a ${imapHost}...`);
     await client.connect();
 
-    const folders = await client.list();
-    const folderNames = folders.map((f) => f.path).filter((p) => p !== "[Gmail]");
-
-    for (const folderName of folderNames) {
+    const folderList = await client.list();
+    for (const f of folderList) {
       try {
-        await client.mailboxOpen(folderName);
-        const searchResult = await client.search({ before: corte });
-        if (searchResult.length === 0) continue;
+        await client.mailboxOpen(f.path);
+        const found = await client.search({ before: corte });
+        if (!found.length) continue;
+        console.log(`[Correos] ${f.path}: ${found.length} correos`);
 
-        console.log(`[Correos] Carpeta "${folderName}": ${searchResult.length} correos`);
-
-        for (const seq of searchResult.slice(0, 500)) {
+        for (const seq of found.slice(0, 500)) {
           try {
             const msg = await client.fetchOne(seq, { envelope: true, source: true });
-            const date = msg.envelope.date || new Date();
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, "0");
+            const d = msg.envelope.date || new Date();
+            const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0");
             const from = (msg.envelope.from || [{ address: "desconocido@mail.com" }])[0]?.address || "desconocido";
-            const subject = (msg.envelope.subject || "sin-asunto").replace(/[^a-zA-Z0-9\u00C0-\u024F _-]/g, "_").slice(0, 60);
+            const sub = (msg.envelope.subject || "sin-asunto").replace(/[^a-zA-Z0-9\u00C0-\u024F _-]/g, "_").slice(0, 60);
 
-            const dir = join(rutaArchivo, String(y), m, from.replace(/[^a-zA-Z0-9@._-]/g, "_"));
+            const dir = join(ruta, String(y), m, from.replace(/[^a-zA-Z0-9@._-]/g, "_"));
             mkdirSync(dir, { recursive: true });
-            const filename = `${date.toISOString().split("T")[0]}_${subject}_${seq}.eml`.replace(/[/\\?%*:|"<>]/g, "_");
-            const filepath = join(dir, filename);
-
-            writeFileSync(filepath, msg.source);
-            totalArchivados++;
-            totalBytes += msg.source.length;
-
-            if (borrarDespues) {
-              await client.messageDelete(seq);
-            }
-          } catch (err) {
-            console.log(`[Correos] Error individual: ${err.message}`);
-          }
+            const fname = `${d.toISOString().split("T")[0]}_${sub}_${seq}.eml`.replace(/[/\\?%*:|"<>]/g, "_");
+            writeFileSync(join(dir, fname), msg.source);
+            totalArchivados++; totalBytes += msg.source.length;
+            if (borrarDespues) await client.messageDelete(seq);
+          } catch {}
         }
-      } catch (err) {
-        console.log(`[Correos] Error carpeta "${folderName}": ${err.message}`);
-      }
+      } catch (e) { console.log(`[Correos] Error ${f.path}: ${e.message}`); }
     }
 
     await client.logout();
-    console.log(`[Correos] Archivo completado: ${totalArchivados} correos, ${(totalBytes / 1024 / 1024).toFixed(1)} MB`);
-
-    res.json({
-      totalArchivados,
-      espacioEstimadoMB: +(totalBytes / 1024 / 1024).toFixed(1),
-      ruta: rutaArchivo,
-    });
+    console.log(`[Correos] ${totalArchivados} correos, ${(totalBytes / 1024 / 1024).toFixed(1)} MB`);
+    res.json({ totalArchivados, espacioEstimadoMB: +(totalBytes / 1024 / 1024).toFixed(1), ruta });
   } catch (err) {
-    console.error("[Correos] Error:", err);
+    console.error("[Correos]", err);
     res.status(500).json({ error: err.message });
   }
 });

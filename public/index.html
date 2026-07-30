@@ -158,6 +158,10 @@
     .settings-row input{flex:1;padding:8px 12px;border:2px solid #E5E7EB;border-radius:8px;font-size:13px}
     .settings-row input:focus{outline:none;border-color:#EAB308}
 
+    /* Correos preview */
+    .correos-meta{font-size:12px;color:#374151;margin-bottom:4px}
+    .correos-meta strong{color:#111827;min-width:50px;display:inline-block}
+
     /* Footer */
     .footer{background:#111827;color:#9CA3AF;text-align:center;padding:16px;font-size:12px}
     .footer strong{color:#EAB308}
@@ -208,19 +212,31 @@
 
   <!-- TAB: Correos -->
   <div id="tab-correos" class="tab-content" style="display:none">
-    <h3 style="margin-bottom:16px">📧 Archivar correos de cPanel</h3>
-    <div class="extract-card">
-      <div class="form-group"><label>Servidor IMAP</label><input id="imap-host" placeholder="mail.ingelubsa.com"></div>
-      <div class="form-group"><label>Puerto IMAP</label><input id="imap-port" value="993" type="number"></div>
-      <div class="form-group"><label>Usuario IMAP</label><input id="imap-user" placeholder="correo@ingelubsa.com"></div>
-      <div class="form-group"><label>Contraseña IMAP</label><input id="imap-pass" type="password" placeholder="contraseña"></div>
-      <div class="form-group"><label>Antigüedad (meses)</label><input id="imap-antiguedad" value="12" type="number"><p style="font-size:11px;color:#6B7280;margin-top:4px">Solo correos de más de X meses</p></div>
-      <div class="form-group"><label>Ruta de archivo</label><input id="imap-ruta" placeholder="/mnt/correos o Z:\correos"><p style="font-size:11px;color:#6B7280;margin-top:4px">Ruta donde está montado el disco AirPort</p></div>
-      <label style="display:flex;align-items:center;gap:8px;margin:12px 0;font-size:13px"><input type="checkbox" id="imap-borrar"> Borrar del servidor después de archivar</label>
-      <button class="btn btn-primary" id="btn-archivar" onclick="archivarCorreos()">📥 Ejecutar Archivo</button>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
+      <div style="flex:1;display:flex;gap:8px">
+        <input id="correos-search" placeholder="🔍 Buscar por remitente o asunto..." style="flex:1;padding:10px 14px;border:2px solid #E5E7EB;border-radius:10px;font-size:14px" oninput="browseCorreos()">
+        <span id="correos-path" style="font-size:12px;color:#6B7280;min-width:120px;padding:10px 0">/</span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="toggleModal('modal-archivar')">📥 Archivar</button>
     </div>
-    <div id="correos-result" class="banner" style="margin-top:16px"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <!-- Árbol de archivos -->
+      <div class="file-tree" style="max-height:500px;overflow-y:auto">
+        <div id="correos-tree" style="padding:8px"><p style="padding:20px;color:#9CA3AF;text-align:center">Configurá la ruta del disco AirPort en ⚙️ Settings</p></div>
+      </div>
+
+      <!-- Preview -->
+      <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;padding:16px;max-height:500px;overflow-y:auto">
+        <div id="correos-preview">
+          <p style="color:#9CA3AF;text-align:center;padding:40px 0">Seleccioná un correo para previsualizar</p>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Modal: Archivar correos -->
+  <div class="modal-overlay" id="modal-archivar"><div class="modal" style="max-width:500px"><div class="modal-header"><h2>📥 Archivar correos</h2><button class="modal-close" onclick="toggleModal('modal-archivar')">×</button></div><div class="form-group"><label>Servidor IMAP</label><input id="imap-host" placeholder="mail.ingelubsa.com"></div><div class="form-group"><label>Usuario</label><input id="imap-user" placeholder="correo@ingelubsa.com"></div><div class="form-group"><label>Contraseña</label><input id="imap-pass" type="password"></div><div class="form-group"><label>Antigüedad (meses)</label><input id="imap-antiguedad" value="12" type="number"></div><label style="display:flex;align-items:center;gap:8px;margin:12px 0;font-size:13px"><input type="checkbox" id="imap-borrar">Borrar del servidor después de archivar</label><button class="btn btn-primary" id="btn-archivar" onclick="archivarCorreos()">📥 Ejecutar Archivo</button><div id="correos-result" class="banner" style="margin-top:12px"></div></div></div>
 </div>
 
 </main></div>
@@ -229,7 +245,7 @@
 <div class="modal-overlay" id="modal-proyecto"><div class="modal"><div class="modal-header"><h2>Nuevo Proyecto</h2><button class="modal-close" onclick="toggleModal('modal-proyecto')">×</button></div><div class="form-group"><label>Nombre del proyecto</label><input id="new-project-name" placeholder="Ej: Planta Norte, Ruta Lubricación 2026..."></div><button class="btn btn-primary" onclick="crearProyecto()">Crear Proyecto</button></div></div>
 
 <!-- Modal: Settings -->
-<div class="modal-overlay" id="modal-settings"><div class="modal"><div class="modal-header"><h2>⚙️ Configuración</h2><button class="modal-close" onclick="toggleModal('modal-settings')">×</button></div><div class="settings-row"><label>Deepgram API Key</label><input id="set-deepgram" type="password" placeholder="API Key"></div><div class="settings-row"><label>Claude API Key</label><input id="set-claude" type="password" placeholder="sk-ant-api03-..."></div><div class="settings-row"><label>Gmail Usuario</label><input id="set-gmail-user" placeholder="correo@gmail.com"></div><div class="settings-row"><label>Gmail Contraseña (app)</label><input id="set-gmail-pass" type="password" placeholder="abcd efgh ijkl mnop"></div><div class="settings-row"><label>Email destino</label><input id="set-email-to" placeholder="destino@correo.com"></div><div class="settings-row"><label>Ollama Model</label><input id="set-ollama" placeholder="qwen2.5"></div><div style="margin-top:16px;display:flex;gap:10px"><button class="btn btn-primary" onclick="saveSettings()">💾 Guardar</button><span id="settings-msg" style="font-size:13px;padding-top:8px"></span></div></div></div>
+<div class="modal-overlay" id="modal-settings"><div class="modal"><div class="modal-header"><h2>⚙️ Configuración</h2><button class="modal-close" onclick="toggleModal('modal-settings')">×</button></div><div class="settings-row"><label>Deepgram API Key</label><input id="set-deepgram" type="password" placeholder="API Key"></div><div class="settings-row"><label>Claude API Key</label><input id="set-claude" type="password" placeholder="sk-ant-api03-..."></div><div class="settings-row"><label>Gmail Usuario</label><input id="set-gmail-user" placeholder="correo@gmail.com"></div><div class="settings-row"><label>Gmail Contraseña (app)</label><input id="set-gmail-pass" type="password" placeholder="abcd efgh ijkl mnop"></div><div class="settings-row"><label>Email destino</label><input id="set-email-to" placeholder="destino@correo.com"></div><div class="settings-row"><label>Ollama Model</label><input id="set-ollama" placeholder="qwen2.5"></div><div class="settings-row"><label>Ruta Correos</label><input id="set-ruta-correos" placeholder="Z:\correos o /mnt/correos"><p style="font-size:11px;color:#6B7280;margin-top:4px">Donde está montado el disco AirPort</p></div><div style="margin-top:16px;display:flex;gap:10px"><button class="btn btn-primary" onclick="saveSettings()">💾 Guardar</button><span id="settings-msg" style="font-size:13px;padding-top:8px"></span></div></div></div>
 
 <footer class="footer"><strong>INGELUBSA S.A.S.</strong> © 2026</footer>
 </div>
@@ -295,11 +311,15 @@ function sendChat(){const inp=document.getElementById("chat-input");const txt=in
 function saveChat(){localStorage.setItem(`chat_${currentProject.id}`,JSON.stringify(chatMessages))}
 
 // ── Settings ───────────────────────────────
-async function loadSettings(){const r=await fetch("/api/settings");const s=await r.json();document.getElementById("set-deepgram").value=s.DEEPGRAM_API_KEY||"";document.getElementById("set-claude").value=s.CLAUDE_API_KEY||"";document.getElementById("set-gmail-user").value=s.GMAIL_USER||"";document.getElementById("set-gmail-pass").value=s.GMAIL_PASS||"";document.getElementById("set-email-to").value=s.EMAIL_TO||"";document.getElementById("set-ollama").value=s.OLLAMA_MODEL||""}loadSettings();
-async function saveSettings(){const d={DEEPGRAM_API_KEY:document.getElementById("set-deepgram").value.trim(),CLAUDE_API_KEY:document.getElementById("set-claude").value.trim(),GMAIL_USER:document.getElementById("set-gmail-user").value.trim(),GMAIL_PASS:document.getElementById("set-gmail-pass").value.trim(),EMAIL_TO:document.getElementById("set-email-to").value.trim(),OLLAMA_MODEL:document.getElementById("set-ollama").value.trim()};const r=await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});const j=await r.json();const m=document.getElementById("settings-msg");if(j.ok){m.textContent="✅ Guardado";m.style.color="#22C55E"}else{m.textContent="❌ Error";m.style.color="#EF4444"}setTimeout(()=>{m.textContent=""},3000)}
+async function loadSettings(){const r=await fetch("/api/settings");const s=await r.json();document.getElementById("set-deepgram").value=s.DEEPGRAM_API_KEY||"";document.getElementById("set-claude").value=s.CLAUDE_API_KEY||"";document.getElementById("set-gmail-user").value=s.GMAIL_USER||"";document.getElementById("set-gmail-pass").value=s.GMAIL_PASS||"";document.getElementById("set-email-to").value=s.EMAIL_TO||"";document.getElementById("set-ollama").value=s.OLLAMA_MODEL||"";document.getElementById("set-ruta-correos").value=s.RUTA_CORREOS||""}loadSettings();
+async function saveSettings(){const d={DEEPGRAM_API_KEY:document.getElementById("set-deepgram").value.trim(),CLAUDE_API_KEY:document.getElementById("set-claude").value.trim(),GMAIL_USER:document.getElementById("set-gmail-user").value.trim(),GMAIL_PASS:document.getElementById("set-gmail-pass").value.trim(),EMAIL_TO:document.getElementById("set-email-to").value.trim(),OLLAMA_MODEL:document.getElementById("set-ollama").value.trim(),RUTA_CORREOS:document.getElementById("set-ruta-correos").value.trim()};const r=await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});const j=await r.json();const m=document.getElementById("settings-msg");if(j.ok){m.textContent="✅ Guardado";m.style.color="#22C55E"}else{m.textContent="❌ Error";m.style.color="#EF4444"}setTimeout(()=>{m.textContent=""},3000)}
 
 // ── Correos ────────────────────────────────
-async function archivarCorreos(){const btn=document.getElementById("btn-archivar");btn.disabled=true;btn.textContent="⏳ Archivando...";const el=document.getElementById("correos-result");el.className="banner processing";el.innerHTML='<span class="spinner"></span>Conectando a cPanel...';try{const r=await fetch("/api/correos/archivar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({imapHost:document.getElementById("imap-host").value.trim(),imapPort:parseInt(document.getElementById("imap-port").value)||993,imapUser:document.getElementById("imap-user").value.trim(),imapPass:document.getElementById("imap-pass").value,antiguedad:parseInt(document.getElementById("imap-antiguedad").value)||12,rutaArchivo:document.getElementById("imap-ruta").value.trim(),borrarDespues:document.getElementById("imap-borrar").checked})});const d=await r.json();if(d.error){el.className="banner error";el.innerHTML=d.error}else{el.className="banner success";el.innerHTML=`✅ ${d.totalArchivados} correos archivados (${d.espacioEstimadoMB} MB) en ${d.ruta}`}}catch(e){el.className="banner error";el.innerHTML="Error: "+e.message}btn.disabled=false;btn.textContent="📥 Ejecutar Archivo"}
+async function browseCorreos(path=""){const tree=document.getElementById("correos-tree");const search=document.getElementById("correos-search").value;const sp=document.getElementById("correos-path");try{const r=await fetch(`/api/correos/browse?path=${encodeURIComponent(path)}&search=${encodeURIComponent(search)}`);const d=await r.json();if(d.error){tree.innerHTML=`<p style="padding:20px;color:#EF4444">${d.error}</p>`;return}sp.textContent=d.path||"/";let h="";if(path){h+=`<div class="tree-item" onclick="browseCorreos('${path.split("/").slice(0,-1).join("/")}')"><span class="icon">📁</span><span class="name">.. (subir)</span></div>`}for(const f of d.folders){h+=`<div class="tree-item" onclick="browseCorreos('${f.path}')"><span class="icon">📂</span><span class="name">${esc(f.name)}</span><span class="meta">${f.count} 📧</span></div>`}for(const f of d.files){h+=`<div class="tree-item" onclick="previewCorreo('${encodeURIComponent(f.path+"\\/"+f.name)}')"><span class="icon">📧</span><span class="name">${esc(f.asunto||f.name)}</span><span class="meta">${f.fecha} · ${f.sizeKB} KB</span></div>`}tree.innerHTML=h||'<p style="padding:20px;color:#9CA3AF;text-align:center">Carpeta vacía</p>'}catch(e){tree.innerHTML=`<p style="padding:20px;color:#EF4444">Error: ${e.message}</p>`}}
+
+async function previewCorreo(file){const el=document.getElementById("correos-preview");el.innerHTML='<p style="color:#6B7280;text-align:center;padding:40px 0"><span class="spinner"></span></p>';try{const r=await fetch(`/api/correos/read?file=${encodeURIComponent(file)}`);const d=await r.json();if(d.error){el.innerHTML=`<p style="color:#EF4444">${d.error}</p>`;return}el.innerHTML=`<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #E5E7EB"><div class="correos-meta"><strong>De:</strong> ${esc(d.from)}</div><div class="correos-meta"><strong>Para:</strong> ${esc(d.to)}</div><div class="correos-meta"><strong>Asunto:</strong> ${esc(d.subject)}</div><div class="correos-meta"><strong>Fecha:</strong> ${esc(d.date)}</div></div><div style="white-space:pre-wrap;font-size:13px;line-height:1.6;color:#374151">${esc(d.body)}</div>`}catch(e){el.innerHTML=`<p style="color:#EF4444">Error: ${e.message}</p>`}}
+
+async function archivarCorreos(){const btn=document.getElementById("btn-archivar");btn.disabled=true;btn.textContent="⏳ Archivando...";const el=document.getElementById("correos-result");el.className="banner processing";el.innerHTML='<span class="spinner"></span>Conectando...';try{const r=await fetch("/api/correos/archivar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({imapHost:document.getElementById("imap-host").value.trim(),imapUser:document.getElementById("imap-user").value.trim(),imapPass:document.getElementById("imap-pass").value,antiguedad:parseInt(document.getElementById("imap-antiguedad").value)||12,borrarDespues:document.getElementById("imap-borrar").checked})});const d=await r.json();if(d.error){el.className="banner error";el.innerHTML=d.error}else{el.className="banner success";el.innerHTML=`✅ ${d.totalArchivados} correos archivados (${d.espacioEstimadoMB} MB)`;setTimeout(browseCorreos,1000)}}catch(e){el.className="banner error";el.innerHTML="Error: "+e.message}btn.disabled=false;btn.textContent="📥 Ejecutar Archivo"}
 
 // ── UI ─────────────────────────────────────
 function showBanner(m,t){const b=document.getElementById("banner");b.className=`banner ${t}`;b.innerHTML=(t==="processing"?'<span class="spinner"></span>':"")+m}

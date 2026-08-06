@@ -21,48 +21,23 @@ mkdirSync(DATA_DIR, { recursive: true });
 mkdirSync(EXPORT_DIR, { recursive: true });
 
 // ── Supabase ────────────────────────────────────────────
-let supabase = null, settingsCache = {};
+let supabase = null;
 function getSupabase() {
   if (!supabase) {
-    const url = process.env.SUPABASE_URL || settingsCache.SUPABASE_URL;
-    const key = process.env.SUPABASE_ANON_KEY || settingsCache.SUPABASE_ANON_KEY;
-    if (!url || !key) throw new Error("SUPABASE_URL o SUPABASE_ANON_KEY no configurados");
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_ANON_KEY;
+    if (!url || !key) throw new Error("SUPABASE_URL o SUPABASE_ANON_KEY no configurados en el .env");
     supabase = createSupabase(url, key);
   }
   return supabase;
 }
 
-async function loadSettingsCache() {
-  try {
-    const sb = createSupabase(process.env.SUPABASE_URL || "", process.env.SUPABASE_ANON_KEY || "");
-    const { data } = await sb.from("settings").select("*");
-    for (const r of (data || [])) settingsCache[r.key] = r.value;
-  } catch { /* Supabase no configurado aún */ }
-}
-await loadSettingsCache();
-
 function getSetting(key) {
-  return settingsCache[key] || process.env[key] || "";
-}
-
-async function saveSettingsToDB(updates) {
-  // Si están configurando Supabase por primera vez, usar esas credenciales
-  const url = updates.SUPABASE_URL || settingsCache.SUPABASE_URL || process.env.SUPABASE_URL;
-  const key = updates.SUPABASE_ANON_KEY || settingsCache.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error("SUPABASE_URL y SUPABASE_ANON_KEY son requeridos para guardar configuración");
-
-  let sb = supabase;
-  if (!sb) sb = createSupabase(url, key);
-  else {
-    // Si las credenciales cambiaron, recrear cliente
-    const currentUrl = process.env.SUPABASE_URL || settingsCache.SUPABASE_URL;
-    if (url !== currentUrl) { sb = createSupabase(url, key); supabase = sb; }
-  }
-
-  for (const [key, val] of Object.entries(updates)) {
-    await sb.from("settings").upsert({ key, value: val }).select().maybeSingle();
-    settingsCache[key] = val;
-  }
+  // API keys siempre del .env (Render). Solo RUTA_CORREOS puede venir de Supabase.
+  const envKeys = ["DEEPGRAM_API_KEY", "CLAUDE_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY",
+    "GMAIL_USER", "GMAIL_PASS", "EMAIL_TO", "OLLAMA_MODEL"];
+  if (envKeys.includes(key)) return process.env[key] || "";
+  return process.env[key] || "";
 }
 
 // ── Deepgram / Claude lazy ────────────────────────────
@@ -102,21 +77,22 @@ app.get("/api/settings", async (_req, res) => {
     const { data } = await getSupabase().from("settings").select("*");
     const obj = {};
     for (const r of (data || [])) obj[r.key] = r.value;
+    // Agregar las de process.env para que el frontend las vea
+    obj.SUPABASE_URL = obj.SUPABASE_URL || process.env.SUPABASE_URL || "";
     res.json(obj);
   } catch { res.json({}); }
 });
 
 app.post("/api/settings", async (req, res) => {
   try {
-    const allowed = ["DEEPGRAM_API_KEY", "CLAUDE_API_KEY", "GMAIL_USER", "GMAIL_PASS", "EMAIL_TO", "OLLAMA_MODEL", "RUTA_CORREOS", "SUPABASE_URL", "SUPABASE_ANON_KEY"];
-    const updates = {};
-    for (const key of allowed) {
-      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    // Solo guardar en Supabase los valores no sensibles (RUTA_CORREOS)
+    const saveableKeys = ["RUTA_CORREOS"];
+    for (const key of saveableKeys) {
+      if (req.body[key] !== undefined) {
+        await getSupabase().from("settings").upsert({ key, value: req.body[key] });
+      }
     }
-    await saveSettingsToDB(updates);
-    _deepgram = null;
-    _claude = null;
-    supabase = null; // reset para que se reinicie con nuevas creds si cambiaron
+    _deepgram = null; _claude = null;
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

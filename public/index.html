@@ -122,6 +122,7 @@
     .file-tree-header{padding:14px 20px;background:#F9FAFB;border-bottom:1px solid #E5E7EB;display:flex;gap:8px;align-items:center}
     .tree-item{display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid #F3F4F6;font-size:13px;transition:background .1s;cursor:pointer}
     .tree-item:hover{background:#FEF9C3}
+    .tree-item.selected{background:#FEF3C7;border-left:3px solid #EAB308;font-weight:600}
     .tree-item .icon{font-size:16px;width:20px;text-align:center}
     .tree-item .name{flex:1;color:#111827}
     .tree-item .meta{color:#9CA3AF;font-size:11px;margin-left:auto}
@@ -281,7 +282,7 @@ async function loadSedes(){if(!currentProject)return;const r=await fetch(`/api/p
 let currentSedeId=null,currentSedeName="";
 async function newSede(){const n=prompt("Nombre de la sede:");if(!n)return;await fetch(`/api/projects/${currentProject.id}/sedes`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n})});loadSedes()}
 async function selectSede(id,name){currentSedeId=id;currentSedeName=name;document.getElementById("btn-folder").disabled=false;loadSedes();loadProjectFiles()}
-async function newFolderInSede(){if(!currentSedeId)return;const n=prompt("Nombre de la carpeta:");if(!n)return;await fetch(`/api/projects/${currentProject.id}/folders`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,sedeId:currentSedeId})});loadProjectFiles()}
+async function newFolderInSede(){if(!currentSedeId)return alert("Seleccioná una sede primero");const n=prompt("Nombre de la carpeta:");if(!n)return;await fetch(`/api/projects/${currentProject.id}/folders`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,sedeId:currentSedeId})});loadProjectFiles()}
 async function uploadToProject(file){if(!file||!currentProject)return;if(!currentSedeId){alert("Seleccioná una sede primero");return}const f=new FormData();f.append("file",file);f.append("sedeId",currentSedeId);await fetch(`/api/projects/${currentProject.id}/files`,{method:"POST",body:f});loadProjectFiles()}
 
 // ── Project Files ───────────────────────────

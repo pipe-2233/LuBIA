@@ -21,15 +21,18 @@ mkdirSync(DATA_DIR, { recursive: true });
 mkdirSync(EXPORT_DIR, { recursive: true });
 
 // ── Supabase ────────────────────────────────────────────
-let supabase = null;
-function getSupabase() {
-  if (!supabase) {
-    const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_ANON_KEY;
-    if (!url || !key) throw new Error("SUPABASE_URL o SUPABASE_ANON_KEY no configurados en el .env");
-    supabase = createSupabase(url, key);
+let supabaseAnon = null, supabaseAdmin = null;
+function getSupabaseAdmin() {
+  if (!supabaseAnon) {
+    supabaseAnon = createSupabase(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
   }
-  return supabase;
+  return supabaseAnon;
+}
+function getSupabaseAdmin() {
+  // La clave de servicio ignora RLS
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!supabaseAdmin) supabaseAdmin = createSupabase(process.env.SUPABASE_URL, key);
+  return supabaseAdmin;
 }
 
 function getSetting(key) {
@@ -57,7 +60,7 @@ app.use(express.static(join(__dirname, "public")));
 // ── Proyectos (Supabase) ──────────────────────────────
 app.get("/api/projects", async (_req, res) => {
   try {
-    const { data } = await getSupabase().from("projects").select("*").order("created_at", { ascending: false });
+    const { data } = await getSupabaseAdmin().from("projects").select("*").order("created_at", { ascending: false });
     res.json(data || []);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -66,7 +69,7 @@ app.post("/api/projects", async (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: "Nombre requerido" });
   try {
-    const { data } = await getSupabase().from("projects").insert({ name }).select().single();
+    const { data } = await getSupabaseAdmin().from("projects").insert({ name }).select().single();
     res.json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -74,7 +77,7 @@ app.post("/api/projects", async (req, res) => {
 // ── Settings ───────────────────────────────────────────
 app.get("/api/settings", async (_req, res) => {
   try {
-    const { data } = await getSupabase().from("settings").select("*");
+    const { data } = await getSupabaseAdmin().from("settings").select("*");
     const obj = {};
     for (const r of (data || [])) obj[r.key] = r.value;
     // Agregar las de process.env para que el frontend las vea
@@ -89,7 +92,7 @@ app.post("/api/settings", async (req, res) => {
     const saveableKeys = ["RUTA_CORREOS"];
     for (const key of saveableKeys) {
       if (req.body[key] !== undefined) {
-        await getSupabase().from("settings").upsert({ key, value: req.body[key] });
+        await getSupabaseAdmin().from("settings").upsert({ key, value: req.body[key] });
       }
     }
     _deepgram = null; _claude = null;
@@ -100,7 +103,7 @@ app.post("/api/settings", async (req, res) => {
 // ── Sedes del proyecto ─────────────────────────────────
 app.get("/api/projects/:id/sedes", async (req, res) => {
   try {
-    const { data } = await getSupabase().from("sedes").select("*").eq("project_id", req.params.id).order("created_at");
+    const { data } = await getSupabaseAdmin().from("sedes").select("*").eq("project_id", req.params.id).order("created_at");
     res.json(data || []);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -109,7 +112,7 @@ app.post("/api/projects/:id/sedes", async (req, res) => {
   const { name, description } = req.body;
   if (!name) return res.status(400).json({ error: "Nombre requerido" });
   try {
-    const { data } = await getSupabase().from("sedes").insert({
+    const { data } = await getSupabaseAdmin().from("sedes").insert({
       project_id: req.params.id, name, description: description || "",
     }).select().single();
     res.json(data);
@@ -118,7 +121,7 @@ app.post("/api/projects/:id/sedes", async (req, res) => {
 
 app.delete("/api/projects/:id/sedes/:sedeId", async (req, res) => {
   try {
-    const sb = getSupabase();
+    const sb = getSupabaseAdmin();
     await sb.from("files").delete().eq("sede_id", req.params.sedeId);
     await sb.from("folders").delete().eq("sede_id", req.params.sedeId);
     await sb.from("sedes").delete().eq("id", req.params.sedeId);
@@ -135,7 +138,7 @@ function projectDir(projectId) {
 
 app.get("/api/projects/:id/files", async (req, res) => {
   try {
-    const sb = getSupabase(), sedeId = req.query.sede_id || null;
+    const sb = getSupabaseAdmin(), sedeId = req.query.sede_id || null;
     let qF = sb.from("folders").select("*").eq("project_id", req.params.id);
     let qFi = sb.from("files").select("*").eq("project_id", req.params.id);
     if (sedeId) { qF = qF.eq("sede_id", sedeId); qFi = qFi.eq("sede_id", sedeId); }
@@ -148,7 +151,7 @@ app.post("/api/projects/:id/folders", async (req, res) => {
   const { name, parentId, sedeId } = req.body;
   if (!name) return res.status(400).json({ error: "Nombre requerido" });
   try {
-    const { data } = await getSupabase().from("folders").insert({
+    const { data } = await getSupabaseAdmin().from("folders").insert({
       project_id: req.params.id, name, parent_id: parentId || null, sede_id: sedeId || null,
     }).select().single();
     res.json(data);
@@ -157,7 +160,7 @@ app.post("/api/projects/:id/folders", async (req, res) => {
 
 app.delete("/api/projects/:id/folders/:folderId", async (req, res) => {
   try {
-    const sb = getSupabase();
+    const sb = getSupabaseAdmin();
     await sb.from("files").update({ folder_id: null }).eq("folder_id", req.params.folderId);
     await sb.from("folders").delete().eq("id", req.params.folderId);
     res.json({ ok: true });
@@ -169,7 +172,7 @@ const fileUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize:
 app.post("/api/projects/:id/files", fileUpload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No se recibió archivo" });
   try {
-    const sb = getSupabase();
+    const sb = getSupabaseAdmin();
     const { data } = await sb.from("files").insert({
       project_id: req.params.id, folder_id: req.body.folderId || null,
       sede_id: req.body.sedeId || null,
@@ -191,7 +194,7 @@ app.post("/api/projects/:id/files", fileUpload.single("file"), async (req, res) 
 
 app.delete("/api/projects/:id/files/:fileId", async (req, res) => {
   try {
-    await getSupabase().from("files").delete().eq("id", req.params.fileId);
+    await getSupabaseAdmin().from("files").delete().eq("id", req.params.fileId);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -199,7 +202,7 @@ app.delete("/api/projects/:id/files/:fileId", async (req, res) => {
 // ── Visualizar archivo ────────────────────────────────
 app.get("/api/projects/:id/files/:fileId/view", async (req, res) => {
   try {
-    const sb = getSupabase();
+    const sb = getSupabaseAdmin();
     const { data: file } = await sb.from("files").select("*").eq("id", req.params.fileId).single();
     if (!file) return res.status(404).json({ error: "Archivo no encontrado en BD" });
 
@@ -220,9 +223,9 @@ app.get("/api/projects/:id/files/:fileId/view", async (req, res) => {
 // ── Transcribir archivo de audio del proyecto ─────────
 app.post("/api/transcribe-file/:fileId", async (req, res) => {
   try {
-    const { data: file } = await getSupabase().from("files").select("*").eq("id", req.params.fileId).single();
+    const { data: file } = await getSupabaseAdmin().from("files").select("*").eq("id", req.params.fileId).single();
     if (!file) return res.status(404).json({ error: "Archivo no encontrado" });
-    const sb = getSupabase();
+    const sb = getSupabaseAdmin();
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const storagePath = `${file.project_id}/${file.id}/${safeName}`;
     const { data: dl } = await sb.storage.from("lubia-files").download(storagePath);

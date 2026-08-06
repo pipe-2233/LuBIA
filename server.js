@@ -164,26 +164,29 @@ app.delete("/api/projects/:id/folders/:folderId", async (req, res) => {
 
 const fileUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
-app.post("/api/projects/:id/files", fileUpload.single("file"), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No se recibió archivo" });
+app.post("/api/projects/:id/files", fileUpload.array("files", 20), async (req, res) => {
+  if (!req.files || req.files.length === 0) return res.status(400).json({ error: "No se recibieron archivos" });
   try {
     const sb = getSupabaseAdmin();
-    const { data } = await sb.from("files").insert({
-      project_id: req.params.id, folder_id: req.body.folderId || null,
-      sede_id: req.body.sedeId || null,
-      name: req.file.originalname, mimetype: req.file.mimetype, size: req.file.size,
-    }).select().single();
-    // Subir a Supabase Storage
-    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storagePath = `${req.params.id}/${data.id}/${safeName}`;
-    const { error: uploadErr } = await sb.storage.from("lubia-files").upload(storagePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
-    if (uploadErr) {
-      console.error("[Upload] Error Storage:", uploadErr);
-      await sb.from("files").delete().eq("id", data.id);
-      return res.status(500).json({ error: `Error al subir archivo: ${uploadErr.message}` });
+    const results = [];
+    for (const file of req.files) {
+      const { data } = await sb.from("files").insert({
+        project_id: req.params.id, folder_id: req.body.folderId || null,
+        sede_id: req.body.sedeId || null,
+        name: file.originalname, mimetype: file.mimetype, size: file.size,
+      }).select().single();
+      const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const storagePath = `${req.params.id}/${data.id}/${safeName}`;
+      const { error: uploadErr } = await sb.storage.from("lubia-files").upload(storagePath, file.buffer, { contentType: file.mimetype, upsert: true });
+      if (uploadErr) {
+        await sb.from("files").delete().eq("id", data.id);
+        console.error("[Upload] Error Storage:", uploadErr);
+      } else {
+        results.push(data);
+        console.log(`[Upload] OK: ${file.originalname} (${file.size} bytes)`);
+      }
     }
-    console.log(`[Upload] OK: ${storagePath} (${req.file.size} bytes)`);
-    res.json(data);
+    res.json({ count: results.length, files: results });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

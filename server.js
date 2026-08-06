@@ -178,8 +178,12 @@ app.post("/api/projects/:id/files", fileUpload.single("file"), async (req, res) 
     // Subir a Supabase Storage
     const storagePath = `${req.params.id}/${data.id}/${req.file.originalname}`;
     const { error: uploadErr } = await sb.storage.from("lubia-files").upload(storagePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
-    if (uploadErr) { console.error("[Upload] Error Supabase Storage:", uploadErr); }
-    console.log(`[Upload] ${storagePath} (${req.file.size} bytes)`);
+    if (uploadErr) {
+      console.error("[Upload] Error Storage:", uploadErr);
+      await sb.from("files").delete().eq("id", data.id);
+      return res.status(500).json({ error: `Error al subir archivo: ${uploadErr.message}` });
+    }
+    console.log(`[Upload] OK: ${storagePath} (${req.file.size} bytes)`);
     res.json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

@@ -189,34 +189,38 @@
 
 <!-- PROYECTO -->
 <div id="view-project" style="display:none">
-  <div class="topbar"><div><button class="btn btn-outline btn-sm" onclick="goHome()">← Proyectos</button><h1 style="margin-top:8px" id="project-title"></h1></div><button class="btn btn-primary" onclick="openAudioTab()">🎤 Subir Audio</button></div>
+  <div class="topbar"><div><button class="btn btn-outline btn-sm" onclick="goHome()">← Proyectos</button><h1 style="margin-top:8px" id="project-title"></h1></div><div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="toggleChat()" title="Chat">💬 Chat</button><input type="file" id="file-upload-proj" style="display:none" onchange="uploadToProject(this.files[0])"><button class="btn btn-primary btn-sm" onclick="document.getElementById('file-upload-proj').click()">⬆ Subir</button></div></div>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="tab-audio" onclick="switchTab('tab-audio')">🎤 Audio</button>
-    <button class="tab-btn" data-tab="tab-files" onclick="switchTab('tab-files')">📁 Archivos</button>
-    <button class="tab-btn" data-tab="tab-chat" onclick="switchTab('tab-chat')">💬 Chat</button>
+  <div style="display:grid;grid-template-columns:240px 1fr;gap:16px;min-height:400px">
+    <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;padding:12px;display:flex;flex-direction:column">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#374151">🏭 Sedes</div>
+      <div id="sede-list" style="flex:1;overflow-y:auto;margin-bottom:8px"><p style="font-size:12px;color:#9CA3AF;text-align:center;padding:20px 0">Cargando...</p></div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn btn-outline btn-xs" onclick="newSede()" style="flex:1">+ Sede</button><button class="btn btn-outline btn-xs" onclick="newFolderInSede()" style="flex:1" id="btn-folder" disabled>+ Carpeta</button></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="file-tree" style="max-height:350px;overflow-y:auto">
+        <div style="padding:10px 16px;background:#F9FAFB;border-bottom:1px solid #E5E7EB;display:flex;font-size:12px;font-weight:600;color:#6B7280">
+          <span style="width:30px"></span><span style="flex:1">Nombre</span><span style="width:100px">Fecha</span><span style="width:80px">Tipo</span><span style="width:70px">Tamaño</span>
+        </div>
+        <div id="file-table"><p style="padding:30px;color:#9CA3AF;text-align:center">Seleccioná una sede para ver sus archivos</p></div>
+      </div>
+      <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;padding:16px;min-height:120px" id="file-preview">
+        <p style="color:#9CA3AF;text-align:center;padding:30px 0">Seleccioná un archivo</p>
+        <div id="preview-content" style="display:none"></div>
+        <div id="preview-transcribe" style="display:none;margin-top:12px">
+          <div id="banner" class="banner"></div>
+          <div id="transcript-box" class="transcript-box" style="display:none"></div>
+          <div id="extract-section" style="display:none"><div id="missing-alert" class="missing-list" style="display:none"></div><div class="extract-card"><div class="form-group"><label>Activo</label><input id="fld-activo" placeholder="Nombre del equipo"></div><h4 style="margin:8px 0">Componentes</h4><table class="comp-table"><thead><tr><th>Componente</th><th>Cantidad</th><th>Lubricante</th><th>Frecuencia</th><th>Ubicación</th></tr></thead><tbody id="comp-tbody"></tbody></table><button class="btn btn-outline btn-sm" onclick="addComponentRow()">+ Componente</button><div class="form-group" style="margin-top:8px"><textarea id="fld-obs" placeholder="Observaciones..."></textarea></div></div><button class="btn btn-green btn-sm" onclick="generarExcel()">⬇ Excel</button></div>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <!-- TAB: Audio -->
-  <div id="tab-audio" class="tab-content">
-    <div id="banner" class="banner"></div>
-    <div class="upload-area" id="upload-area" onclick="document.getElementById('audio-file').click()"><div class="icon">🎤</div><p><strong>Subí un audio de campo</strong> o arrastralo aquí</p><p style="font-size:12px;margin-top:4px">MP3, WAV, WebM, M4A</p></div>
-    <input type="file" id="audio-file" accept="audio/*" style="display:none" onchange="handleAudio(this.files[0])">
-    <div id="section-transcript" style="display:none"><h3 style="margin-top:20px">📝 Transcripción</h3><div class="transcript-box" id="transcript-text"></div><button class="btn btn-primary" id="btn-extract" onclick="extraerDatos()">⚡ Extraer datos con IA</button></div>
-    <div id="section-extract" style="display:none"><h3 style="margin-top:20px">🔍 Datos extraídos</h3><div id="missing-alert" class="missing-list" style="display:none"></div><div class="extract-card"><div class="form-group"><label>Activo</label><input id="fld-activo" placeholder="Nombre del equipo"></div><h4 style="margin:16px 0 8px">Componentes</h4><table class="comp-table"><thead><tr><th>Componente</th><th>Cantidad</th><th>Lubricante</th><th>Frecuencia</th><th>Ubicación</th></tr></thead><tbody id="comp-tbody"></tbody></table><button class="btn btn-outline btn-sm" onclick="addComponentRow()">+ Componente</button><div class="form-group" style="margin-top:12px"><label>Observaciones generales</label><textarea id="fld-obs" placeholder="Notas adicionales..."></textarea></div></div><button class="btn btn-green" onclick="generarExcel()">⬇ Descargar Excel</button></div>
+  <div id="chat-panel" style="display:none;position:fixed;top:0;right:0;width:380px;height:100vh;background:#fff;box-shadow:-4px 0 20px rgba(0,0,0,.1);z-index:200;flex-direction:column">
+    <div style="padding:12px 16px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:16px">💬 Chat del proyecto</h3><button class="modal-close" onclick="toggleChat()">×</button></div>
+    <div class="chat-messages" id="chat-msgs" style="flex:1;overflow-y:auto;padding:16px"><div class="chat-msg assistant">🤖 Hola, soy LUBIA. Preguntame sobre este proyecto. Escribí <b>@</b> para citar un archivo.</div></div>
+    <div class="chat-input-wrap" style="border-top:1px solid #E5E7EB;padding:12px;position:relative"><div class="chat-attachments" id="chat-attach"></div><div class="at-picker" id="at-picker"></div><div class="chat-row"><input id="chat-input" placeholder="Escribí @ para citar un archivo..." onkeydown="handleChatKey(event)" oninput="handleAtInput()"><button onclick="sendChat()">➤</button></div></div>
   </div>
-
-  <!-- TAB: Archivos -->
-  <div id="tab-files" class="tab-content" style="display:none">
-    <div class="file-tree"><div class="file-tree-header"><button class="btn btn-primary btn-sm" onclick="newFolder()">+ Nueva Carpeta</button><button class="btn btn-outline btn-sm" onclick="document.getElementById('file-upload').click()">⬆ Subir Archivo</button></div><div id="file-list"><p style="padding:20px;color:#9CA3AF;text-align:center">Cargando...</p></div></div>
-    <input type="file" id="file-upload" style="display:none" onchange="uploadFile(this.files[0])">
-  </div>
-
-  <!-- TAB: Chat -->
-  <div id="tab-chat" class="tab-content" style="display:none">
-    <div class="chat-container"><div class="chat-messages" id="chat-msgs"><div class="chat-msg assistant">🤖 Hola, soy LUBIA. Preguntame sobre este proyecto. Escribí <b>@</b> para citar un archivo del proyecto.</div></div><div class="chat-input-wrap" style="position:relative"><div class="chat-attachments" id="chat-attach"></div><div class="at-picker" id="at-picker"></div><div class="chat-row"><input id="chat-input" placeholder="Escribí @ para citar un archivo..." onkeydown="handleChatKey(event)" oninput="handleAtInput()"><button onclick="sendChat()">➤</button></div></div></div>
-  </div>
-</div><!-- /view-proyectos -->
+</div>
 
 <!-- SECCIÓN: Correos -->
 <div id="view-correos" style="display:none">

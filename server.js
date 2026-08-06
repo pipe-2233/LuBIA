@@ -97,6 +97,35 @@ app.post("/api/settings", async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── Sedes del proyecto ─────────────────────────────────
+app.get("/api/projects/:id/sedes", async (req, res) => {
+  try {
+    const { data } = await getSupabase().from("sedes").select("*").eq("project_id", req.params.id).order("created_at");
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post("/api/projects/:id/sedes", async (req, res) => {
+  const { name, description } = req.body;
+  if (!name) return res.status(400).json({ error: "Nombre requerido" });
+  try {
+    const { data } = await getSupabase().from("sedes").insert({
+      project_id: req.params.id, name, description: description || "",
+    }).select().single();
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete("/api/projects/:id/sedes/:sedeId", async (req, res) => {
+  try {
+    const sb = getSupabase();
+    await sb.from("files").delete().eq("sede_id", req.params.sedeId);
+    await sb.from("folders").delete().eq("sede_id", req.params.sedeId);
+    await sb.from("sedes").delete().eq("id", req.params.sedeId);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── Archivos y carpetas del proyecto ──────────────────
 function projectDir(projectId) {
   const dir = join(DATA_DIR, "projects", projectId);
@@ -106,20 +135,21 @@ function projectDir(projectId) {
 
 app.get("/api/projects/:id/files", async (req, res) => {
   try {
-    const sb = getSupabase();
-    const { data: folders } = await sb.from("folders").select("*").eq("project_id", req.params.id);
-    const { data: files } = await sb.from("files").select("*").eq("project_id", req.params.id);
+    const sb = getSupabase(), sedeId = req.query.sede_id || null;
+    let qF = sb.from("folders").select("*").eq("project_id", req.params.id);
+    let qFi = sb.from("files").select("*").eq("project_id", req.params.id);
+    if (sedeId) { qF = qF.eq("sede_id", sedeId); qFi = qFi.eq("sede_id", sedeId); }
+    const [{ data: folders }, { data: files }] = await Promise.all([qF, qFi]);
     res.json({ folders: folders || [], files: files || [] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post("/api/projects/:id/folders", async (req, res) => {
-  const { name, parentId } = req.body;
+  const { name, parentId, sedeId } = req.body;
   if (!name) return res.status(400).json({ error: "Nombre requerido" });
   try {
-    const sb = getSupabase();
-    const { data } = await sb.from("folders").insert({
-      project_id: req.params.id, name, parent_id: parentId || null,
+    const { data } = await getSupabase().from("folders").insert({
+      project_id: req.params.id, name, parent_id: parentId || null, sede_id: sedeId || null,
     }).select().single();
     res.json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -134,10 +164,7 @@ app.delete("/api/projects/:id/folders/:folderId", async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-const fileUpload = multer({ storage: multer.diskStorage({
-  destination: (req, _file, cb) => cb(null, projectDir(req.params.id)),
-  filename: (_req, file, cb) => cb(null, "f_" + randomUUID() + "_" + file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")),
-}), limits: { fileSize: 50 * 1024 * 1024 } });
+const fileUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 app.post("/api/projects/:id/files", fileUpload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No se recibió archivo" });
@@ -145,8 +172,11 @@ app.post("/api/projects/:id/files", fileUpload.single("file"), async (req, res) 
     const sb = getSupabase();
     const { data } = await sb.from("files").insert({
       project_id: req.params.id, folder_id: req.body.folderId || null,
+      sede_id: req.body.sedeId || null,
       name: req.file.originalname, mimetype: req.file.mimetype, size: req.file.size,
     }).select().single();
+    // Guardar en disco con el ID de Supabase como nombre
+    writeFileSync(join(projectDir(req.params.id), data.id), req.file.buffer);
     res.json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -156,6 +186,31 @@ app.delete("/api/projects/:id/files/:fileId", async (req, res) => {
     const sb = getSupabase();
     await sb.from("files").delete().eq("id", req.params.fileId);
     res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Transcribir archivo de audio del proyecto ─────────
+app.post("/api/transcribe-file/:fileId", async (req, res) => {
+  try {
+    const { data: file } = await getSupabase().from("files").select("*").eq("id", req.params.fileId).single();
+    if (!file) return res.status(404).json({ error: "Archivo no encontrado" });
+    const diskPath = join(projectDir(file.project_id), file.id);
+    if (!existsSync(diskPath)) return res.status(404).json({ error: "Archivo no encontrado en disco" });
+    const buf = readFileSync(diskPath);
+
+    const { result, error } = await getDeepgram().listen.prerecorded.transcribeFile(buf, {
+      model: "nova-3", smart_format: true, diarize: true, detect_language: true, punctuate: true,
+    });
+    if (error) return res.status(500).json({ error: error.message });
+    const paragraphs = result.results.channels[0]?.alternatives[0]?.paragraphs?.paragraphs || [];
+    let text = ""; const segments = [];
+    for (const p of paragraphs) {
+      const s = p.speaker ?? 0, t = p.sentences.map(s => s.text).join(" ");
+      text += `[Speaker ${s}]: ${t}\n`;
+      segments.push({ speaker: s, text: t, start: p.start, end: p.end });
+    }
+    if (!text) { const alt = result.results.channels[0]?.alternatives[0]?.transcript || ""; text = alt; segments.push({ speaker: 0, text: alt, start: 0, end: 0 }); }
+    res.json({ transcription: text.trim(), segments });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

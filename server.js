@@ -6,34 +6,51 @@ import Anthropic from "@anthropic-ai/sdk";
 import ExcelJS from "exceljs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mkdirSync, readFileSync, writeFileSync, existsSync, unlinkSync, readdirSync, statSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { ImapFlow } from "imapflow";
+import { createClient as createSupabase } from "@supabase/supabase-js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
-const DATA_DIR = join(__dirname, "data");
-const PROJ_FILE = join(DATA_DIR, "projects.json");
-const SETTINGS_FILE = join(DATA_DIR, "settings.json");
 const EXPORT_DIR = join(__dirname, "exports");
+const DATA_DIR = join(__dirname, "data");
 mkdirSync(DATA_DIR, { recursive: true });
 mkdirSync(EXPORT_DIR, { recursive: true });
 
-// ── Helpers: archivo como BD ──────────────────────────
-function loadJSON(path, fallback) {
-  try { return existsSync(path) ? JSON.parse(readFileSync(path, "utf-8")) : fallback; } catch { return fallback; }
+// ── Supabase ────────────────────────────────────────────
+let supabase = null, settingsCache = {};
+function getSupabase() {
+  if (!supabase) {
+    const url = process.env.SUPABASE_URL || settingsCache.SUPABASE_URL;
+    const key = process.env.SUPABASE_ANON_KEY || settingsCache.SUPABASE_ANON_KEY;
+    if (!url || !key) throw new Error("SUPABASE_URL o SUPABASE_ANON_KEY no configurados");
+    supabase = createSupabase(url, key);
+  }
+  return supabase;
 }
-function saveJSON(path, data) { writeFileSync(path, JSON.stringify(data, null, 2), "utf-8"); }
 
-function getSettings() {
-  return loadJSON(SETTINGS_FILE, {});
+async function loadSettingsCache() {
+  try {
+    const sb = createSupabase(process.env.SUPABASE_URL || "", process.env.SUPABASE_ANON_KEY || "");
+    const { data } = await sb.from("settings").select("*");
+    for (const r of (data || [])) settingsCache[r.key] = r.value;
+  } catch { /* Supabase no configurado aún */ }
 }
+await loadSettingsCache();
 
 function getSetting(key) {
-  const s = getSettings();
-  return s[key] || process.env[key] || "";
+  return settingsCache[key] || process.env[key] || "";
+}
+
+async function saveSettingsToDB(updates) {
+  const sb = getSupabase();
+  for (const [key, value] of Object.entries(updates)) {
+    await sb.from("settings").upsert({ key, value }).select().maybeSingle();
+    settingsCache[key] = value;
+  }
 }
 
 // ── Deepgram / Claude lazy ────────────────────────────
@@ -50,34 +67,45 @@ function getClaude() {
 app.use(express.json());
 app.use(express.static(join(__dirname, "public")));
 
-// ── Proyectos (persistencia en archivo) ────────────────
-app.get("/api/projects", (_req, res) => res.json(loadJSON(PROJ_FILE, [])));
+// ── Proyectos (Supabase) ──────────────────────────────
+app.get("/api/projects", async (_req, res) => {
+  try {
+    const { data } = await getSupabase().from("projects").select("*").order("created_at", { ascending: false });
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
-app.post("/api/projects", (req, res) => {
+app.post("/api/projects", async (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: "Nombre requerido" });
-  const projects = loadJSON(PROJ_FILE, []);
-  const p = { id: randomUUID(), name, createdAt: new Date().toISOString() };
-  projects.push(p);
-  saveJSON(PROJ_FILE, projects);
-  res.json(p);
+  try {
+    const { data } = await getSupabase().from("projects").insert({ name }).select().single();
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ── Settings ───────────────────────────────────────────
-app.get("/api/settings", (_req, res) => {
-  res.json(getSettings());
+app.get("/api/settings", async (_req, res) => {
+  try {
+    const { data } = await getSupabase().from("settings").select("*");
+    const obj = {};
+    for (const r of (data || [])) obj[r.key] = r.value;
+    res.json(obj);
+  } catch { res.json({}); }
 });
 
-app.post("/api/settings", (req, res) => {
-  const allowed = ["DEEPGRAM_API_KEY", "CLAUDE_API_KEY", "GMAIL_USER", "GMAIL_PASS", "EMAIL_TO", "OLLAMA_MODEL", "RUTA_CORREOS"];
-  const current = getSettings();
+app.post("/api/settings", async (req, res) => {
+  const allowed = ["DEEPGRAM_API_KEY", "CLAUDE_API_KEY", "GMAIL_USER", "GMAIL_PASS", "EMAIL_TO", "OLLAMA_MODEL", "RUTA_CORREOS", "SUPABASE_URL", "SUPABASE_ANON_KEY"];
+  const updates = {};
   for (const key of allowed) {
-    if (req.body[key] !== undefined) current[key] = req.body[key];
+    if (req.body[key] !== undefined) updates[key] = req.body[key];
   }
-  saveJSON(SETTINGS_FILE, current);
-  _deepgram = null;
-  _claude = null;
-  res.json({ ok: true });
+  try {
+    await saveSettingsToDB(updates);
+    _deepgram = null;
+    _claude = null;
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ── Archivos y carpetas del proyecto ──────────────────
@@ -86,35 +114,35 @@ function projectDir(projectId) {
   mkdirSync(dir, { recursive: true });
   return dir;
 }
-function projectMeta(projectId) {
-  return loadJSON(join(projectDir(projectId), "meta.json"), { folders: [], files: [] });
-}
-function saveProjectMeta(projectId, meta) {
-  saveJSON(join(projectDir(projectId), "meta.json"), meta);
-}
 
-app.get("/api/projects/:id/files", (req, res) => {
-  const meta = projectMeta(req.params.id);
-  res.json({ folders: meta.folders || [], files: meta.files || [] });
+app.get("/api/projects/:id/files", async (req, res) => {
+  try {
+    const sb = getSupabase();
+    const { data: folders } = await sb.from("folders").select("*").eq("project_id", req.params.id);
+    const { data: files } = await sb.from("files").select("*").eq("project_id", req.params.id);
+    res.json({ folders: folders || [], files: files || [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post("/api/projects/:id/folders", (req, res) => {
-  const { name } = req.body;
+app.post("/api/projects/:id/folders", async (req, res) => {
+  const { name, parentId } = req.body;
   if (!name) return res.status(400).json({ error: "Nombre requerido" });
-  const meta = projectMeta(req.params.id);
-  const folder = { id: randomUUID(), name, parentId: req.body.parentId || null, createdAt: new Date().toISOString() };
-  meta.folders = meta.folders || [];
-  meta.folders.push(folder);
-  saveProjectMeta(req.params.id, meta);
-  res.json(folder);
+  try {
+    const sb = getSupabase();
+    const { data } = await sb.from("folders").insert({
+      project_id: req.params.id, name, parent_id: parentId || null,
+    }).select().single();
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.delete("/api/projects/:id/folders/:folderId", (req, res) => {
-  const meta = projectMeta(req.params.id);
-  meta.folders = (meta.folders || []).filter((f) => f.id !== req.params.folderId);
-  meta.files = (meta.files || []).map((f) => (f.folderId === req.params.folderId ? { ...f, folderId: null } : f));
-  saveProjectMeta(req.params.id, meta);
-  res.json({ ok: true });
+app.delete("/api/projects/:id/folders/:folderId", async (req, res) => {
+  try {
+    const sb = getSupabase();
+    await sb.from("files").update({ folder_id: null }).eq("folder_id", req.params.folderId);
+    await sb.from("folders").delete().eq("id", req.params.folderId);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 const fileUpload = multer({ storage: multer.diskStorage({
@@ -122,29 +150,24 @@ const fileUpload = multer({ storage: multer.diskStorage({
   filename: (_req, file, cb) => cb(null, "f_" + randomUUID() + "_" + file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")),
 }), limits: { fileSize: 50 * 1024 * 1024 } });
 
-app.post("/api/projects/:id/files", fileUpload.single("file"), (req, res) => {
+app.post("/api/projects/:id/files", fileUpload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No se recibió archivo" });
-  const meta = projectMeta(req.params.id);
-  const f = {
-    id: randomUUID(), name: req.file.originalname, diskName: req.file.filename,
-    folderId: req.body.folderId || null, size: req.file.size, mimetype: req.file.mimetype,
-    createdAt: new Date().toISOString(),
-  };
-  meta.files = meta.files || [];
-  meta.files.push(f);
-  saveProjectMeta(req.params.id, meta);
-  res.json(f);
+  try {
+    const sb = getSupabase();
+    const { data } = await sb.from("files").insert({
+      project_id: req.params.id, folder_id: req.body.folderId || null,
+      name: req.file.originalname, mimetype: req.file.mimetype, size: req.file.size,
+    }).select().single();
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.delete("/api/projects/:id/files/:fileId", (req, res) => {
-  const meta = projectMeta(req.params.id);
-  const file = (meta.files || []).find((f) => f.id === req.params.fileId);
-  if (file) {
-    try { unlinkSync(join(projectDir(req.params.id), file.diskName)); } catch {}
-  }
-  meta.files = (meta.files || []).filter((f) => f.id !== req.params.fileId);
-  saveProjectMeta(req.params.id, meta);
-  res.json({ ok: true });
+app.delete("/api/projects/:id/files/:fileId", async (req, res) => {
+  try {
+    const sb = getSupabase();
+    await sb.from("files").delete().eq("id", req.params.fileId);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ── Transcribir audio ──────────────────────────────────

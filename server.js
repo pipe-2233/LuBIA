@@ -177,7 +177,9 @@ app.post("/api/projects/:id/files", fileUpload.single("file"), async (req, res) 
     }).select().single();
     // Subir a Supabase Storage
     const storagePath = `${req.params.id}/${data.id}/${req.file.originalname}`;
-    await sb.storage.from("lubia-files").upload(storagePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+    const { error: uploadErr } = await sb.storage.from("lubia-files").upload(storagePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+    if (uploadErr) { console.error("[Upload] Error Supabase Storage:", uploadErr); }
+    console.log(`[Upload] ${storagePath} (${req.file.size} bytes)`);
     res.json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -192,13 +194,20 @@ app.delete("/api/projects/:id/files/:fileId", async (req, res) => {
 // ── Visualizar archivo ────────────────────────────────
 app.get("/api/projects/:id/files/:fileId/view", async (req, res) => {
   try {
-    const { data: file } = await getSupabase().from("files").select("*").eq("id", req.params.fileId).single();
-    if (!file) return res.status(404).json({ error: "No encontrado" });
     const sb = getSupabase();
+    const { data: file } = await sb.from("files").select("*").eq("id", req.params.fileId).single();
+    if (!file) return res.status(404).json({ error: "Archivo no encontrado en BD" });
+
     const storagePath = `${file.project_id}/${file.id}/${file.name}`;
-    const { data } = await sb.storage.from("lubia-files").createSignedUrl(storagePath, 3600);
-    if (!data?.signedUrl) return res.status(404).json({ error: "Archivo no encontrado" });
-    res.redirect(data.signedUrl);
+    // Bucket público: usar URL pública
+    const { data: urlData } = sb.storage.from("lubia-files").getPublicUrl(storagePath);
+    if (urlData?.publicUrl) return res.redirect(urlData.publicUrl);
+
+    // Fallback: signed URL
+    const { data: signed } = await sb.storage.from("lubia-files").createSignedUrl(storagePath, 3600);
+    if (signed?.signedUrl) return res.redirect(signed.signedUrl);
+
+    res.status(404).json({ error: `Archivo no encontrado en Storage: ${storagePath}` });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

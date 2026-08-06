@@ -175,8 +175,9 @@ app.post("/api/projects/:id/files", fileUpload.single("file"), async (req, res) 
       sede_id: req.body.sedeId || null,
       name: req.file.originalname, mimetype: req.file.mimetype, size: req.file.size,
     }).select().single();
-    // Guardar en disco con el ID de Supabase como nombre
-    writeFileSync(join(projectDir(req.params.id), data.id), req.file.buffer);
+    // Subir a Supabase Storage
+    const storagePath = `${req.params.id}/${data.id}/${req.file.originalname}`;
+    await sb.storage.from("lubia-files").upload(storagePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
     res.json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -193,11 +194,11 @@ app.get("/api/projects/:id/files/:fileId/view", async (req, res) => {
   try {
     const { data: file } = await getSupabase().from("files").select("*").eq("id", req.params.fileId).single();
     if (!file) return res.status(404).json({ error: "No encontrado" });
-    const diskPath = join(projectDir(file.project_id), file.id);
-    if (!existsSync(diskPath)) return res.status(404).json({ error: "Archivo no encontrado en disco" });
-    res.setHeader("Content-Type", file.mimetype || "application/octet-stream");
-    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(file.name)}"`);
-    res.sendFile(diskPath);
+    const sb = getSupabase();
+    const storagePath = `${file.project_id}/${file.id}/${file.name}`;
+    const { data } = await sb.storage.from("lubia-files").createSignedUrl(storagePath, 3600);
+    if (!data?.signedUrl) return res.status(404).json({ error: "Archivo no encontrado" });
+    res.redirect(data.signedUrl);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -206,9 +207,11 @@ app.post("/api/transcribe-file/:fileId", async (req, res) => {
   try {
     const { data: file } = await getSupabase().from("files").select("*").eq("id", req.params.fileId).single();
     if (!file) return res.status(404).json({ error: "Archivo no encontrado" });
-    const diskPath = join(projectDir(file.project_id), file.id);
-    if (!existsSync(diskPath)) return res.status(404).json({ error: "Archivo no encontrado en disco" });
-    const buf = readFileSync(diskPath);
+    const sb = getSupabase();
+    const storagePath = `${file.project_id}/${file.id}/${file.name}`;
+    const { data: dl } = await sb.storage.from("lubia-files").download(storagePath);
+    if (!dl) return res.status(404).json({ error: "Archivo no encontrado en Storage" });
+    const buf = Buffer.from(await dl.arrayBuffer());
 
     const { result, error } = await getDeepgram().listen.prerecorded.transcribeFile(buf, {
       model: "nova-3", smart_format: true, diarize: true, detect_language: true, punctuate: true,

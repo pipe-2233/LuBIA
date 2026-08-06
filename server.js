@@ -46,10 +46,22 @@ function getSetting(key) {
 }
 
 async function saveSettingsToDB(updates) {
-  const sb = getSupabase();
-  for (const [key, value] of Object.entries(updates)) {
-    await sb.from("settings").upsert({ key, value }).select().maybeSingle();
-    settingsCache[key] = value;
+  // Si están configurando Supabase por primera vez, usar esas credenciales
+  const url = updates.SUPABASE_URL || settingsCache.SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = updates.SUPABASE_ANON_KEY || settingsCache.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) throw new Error("SUPABASE_URL y SUPABASE_ANON_KEY son requeridos para guardar configuración");
+
+  let sb = supabase;
+  if (!sb) sb = createSupabase(url, key);
+  else {
+    // Si las credenciales cambiaron, recrear cliente
+    const currentUrl = process.env.SUPABASE_URL || settingsCache.SUPABASE_URL;
+    if (url !== currentUrl) { sb = createSupabase(url, key); supabase = sb; }
+  }
+
+  for (const [key, val] of Object.entries(updates)) {
+    await sb.from("settings").upsert({ key, value: val }).select().maybeSingle();
+    settingsCache[key] = val;
   }
 }
 
@@ -95,15 +107,16 @@ app.get("/api/settings", async (_req, res) => {
 });
 
 app.post("/api/settings", async (req, res) => {
-  const allowed = ["DEEPGRAM_API_KEY", "CLAUDE_API_KEY", "GMAIL_USER", "GMAIL_PASS", "EMAIL_TO", "OLLAMA_MODEL", "RUTA_CORREOS", "SUPABASE_URL", "SUPABASE_ANON_KEY"];
-  const updates = {};
-  for (const key of allowed) {
-    if (req.body[key] !== undefined) updates[key] = req.body[key];
-  }
   try {
+    const allowed = ["DEEPGRAM_API_KEY", "CLAUDE_API_KEY", "GMAIL_USER", "GMAIL_PASS", "EMAIL_TO", "OLLAMA_MODEL", "RUTA_CORREOS", "SUPABASE_URL", "SUPABASE_ANON_KEY"];
+    const updates = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
     await saveSettingsToDB(updates);
     _deepgram = null;
     _claude = null;
+    supabase = null; // reset para que se reinicie con nuevas creds si cambiaron
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

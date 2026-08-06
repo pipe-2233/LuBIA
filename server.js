@@ -183,9 +183,21 @@ app.post("/api/projects/:id/files", fileUpload.single("file"), async (req, res) 
 
 app.delete("/api/projects/:id/files/:fileId", async (req, res) => {
   try {
-    const sb = getSupabase();
-    await sb.from("files").delete().eq("id", req.params.fileId);
+    await getSupabase().from("files").delete().eq("id", req.params.fileId);
     res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Visualizar archivo ────────────────────────────────
+app.get("/api/projects/:id/files/:fileId/view", async (req, res) => {
+  try {
+    const { data: file } = await getSupabase().from("files").select("*").eq("id", req.params.fileId).single();
+    if (!file) return res.status(404).json({ error: "No encontrado" });
+    const diskPath = join(projectDir(file.project_id), file.id);
+    if (!existsSync(diskPath)) return res.status(404).json({ error: "Archivo no encontrado en disco" });
+    res.setHeader("Content-Type", file.mimetype || "application/octet-stream");
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(file.name)}"`);
+    res.sendFile(diskPath);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

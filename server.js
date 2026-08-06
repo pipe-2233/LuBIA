@@ -21,18 +21,13 @@ mkdirSync(DATA_DIR, { recursive: true });
 mkdirSync(EXPORT_DIR, { recursive: true });
 
 // ── Supabase ────────────────────────────────────────────
-let supabaseAnon = null, supabaseAdmin = null;
+let _supabase = null;
 function getSupabaseAdmin() {
-  if (!supabaseAnon) {
-    supabaseAnon = createSupabase(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+  if (!_supabase) {
+    const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+    _supabase = createSupabase(process.env.SUPABASE_URL, key);
   }
-  return supabaseAnon;
-}
-function getSupabaseAdmin() {
-  // La clave de servicio ignora RLS
-  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
-  if (!supabaseAdmin) supabaseAdmin = createSupabase(process.env.SUPABASE_URL, key);
-  return supabaseAdmin;
+  return _supabase;
 }
 
 function getSetting(key) {

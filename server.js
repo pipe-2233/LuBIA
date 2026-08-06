@@ -197,6 +197,15 @@ app.delete("/api/projects/:id/files/:fileId", async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.put("/api/projects/:id/files/:fileId", async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Nombre requerido" });
+  try {
+    const { data } = await getSupabaseAdmin().from("files").update({ name }).eq("id", req.params.fileId).eq("project_id", req.params.id).select().single();
+    res.json(data || { ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── Visualizar archivo ────────────────────────────────
 app.get("/api/projects/:id/files/:fileId/view", async (req, res) => {
   try {

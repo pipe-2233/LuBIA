@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editor Excel — LUBIA</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,sans-serif;background:#F8FAFC;color:#111827;display:flex;flex-direction:column;height:100vh}
+    .header{background:#111827;border-bottom:4px solid #EAB308;padding:10px 20px;display:flex;justify-content:space-between;align-items:center}
+    .header h1{font-size:16px;color:#EAB308}
+    .header .filename{color:#9CA3AF;font-size:13px}
+    .header .save-status{font-size:12px;color:#6B7280;display:flex;align-items:center;gap:4px}
+    .toolbar{display:flex;gap:6px;padding:10px 20px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #E5E7EB;background:#fff}
+    .toolbar button{padding:5px 14px;border:1px solid #D1D5DB;background:#fff;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+    .toolbar button:hover{background:#F3F4F6;border-color:#9CA3AF}
+    .toolbar .sep{width:1px;height:20px;background:#E5E7EB;margin:0 4px}
+    .table-wrap{flex:1;overflow:auto;background:#fff;margin:8px 20px;border:1px solid #D1D5DB;border-radius:8px}
+    .editable-table{border-collapse:collapse;font-size:13px;table-layout:fixed}
+    .editable-table th{background:#1a1a2e;color:#EAB308;padding:7px 14px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:0;z-index:2;min-width:100px}
+    .editable-table td{padding:0;border:1px solid #E5E7EB}
+    .editable-table td input{width:100%;padding:6px 10px;border:none;font-size:13px;background:#fff;outline:none;font-family:inherit;min-height:30px}
+    .editable-table td input:focus{background:#FEF9C3;box-shadow:inset 0 0 0 2px #EAB308}
+    .editable-table tr:nth-child(even) td input{background:#F8FAFC}
+    .editable-table tr:nth-child(even) td input:focus{background:#FEF9C3}
+    .cell-focused{box-shadow:inset 0 0 0 2px #EAB308!important;background:#FEF9C3!important}
+
+    .img-picker{position:fixed;z-index:100;background:#fff;border:1px solid #D1D5DB;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.2);max-height:240px;overflow-y:auto;min-width:240px;display:none}
+    .img-picker .item{padding:8px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s}
+    .img-picker .item:hover,.img-picker .item.sel{background:#FEF3C7}
+    .img-preview-box{position:fixed;z-index:101;background:#fff;border:1px solid #D1D5DB;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.2);padding:10px;width:260px;display:none}
+    .img-preview-box img{width:100%;border-radius:6px;max-height:200px;object-fit:contain}
+    .footer-bar{background:#F9FAFB;border-top:1px solid #E5E7EB;padding:8px 20px;font-size:11px;color:#6B7280;display:flex;justify-content:space-between}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div><h1>LUBIA Editor</h1><span class="filename" id="filename">Cargando...</span></div>
+  <div class="save-status" id="save-status">📝 Sin cambios</div>
+</div>
+
+<div class="toolbar">
+  <button onclick="formatCell('bold')"><b>B</b></button>
+  <button onclick="formatCell('italic')"><i>I</i></button>
+  <span class="sep"></span>
+  <button onclick="addRow()">+ Fila</button>
+  <button onclick="deleteRow()">− Fila</button>
+  <span class="sep"></span>
+  <span style="font-size:12px;color:#6B7280">💡 <code>/img</code> para insertar imagen</span>
+</div>
+
+<div class="table-wrap"><table class="editable-table" id="table"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+
+<div class="img-picker" id="img-picker"></div>
+<div class="img-preview-box" id="img-preview"></div>
+
+<div class="footer-bar">
+  <span>LUBIA · INGELUBSA S.A.S.</span>
+  <span id="cell-info">Fila: — Col: —</span>
+</div>
+
+<script>
+const params=new URLSearchParams(location.search);
+const fileId=params.get("id"),projectId=params.get("project");
+let headers=[],rows=[],activeCell=null,saveTimeout=null,dirty=false,imgFiles=[],imgIdx=0;
+
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
+
+async function init(){
+  if(!fileId||!projectId){document.body.innerHTML="<p style='padding:40px;text-align:center;color:#EF4444'>Faltan parámetros: id y project</p>";return}
+  try{
+    const r=await fetch(`/api/projects/${projectId}/files/${fileId}/preview`);
+    const d=await r.json();
+    if(d.error){document.getElementById("filename").textContent=d.error;return}
+    document.getElementById("filename").textContent=d.filename||"Sin nombre";
+    document.title="Editor - "+esc(d.filename||"Excel");
+    headers=d.headers||[];rows=d.rows||[];
+    if(headers.length===0){headers=["A","B","C"];rows=[]}
+    render();
+  }catch(e){document.getElementById("filename").textContent="Error: "+e.message}
+}
+
+function render(){
+  document.getElementById("thead").innerHTML="<tr>"+headers.map(h=>"<th>"+esc(h)+"</th>").join("")+"</tr>";
+  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>`<tr>${headers.map((_,j)=>`<td><input value="${esc(r["col"+j]||"")}" onfocus="focusCell(${ri},${j})" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}"></td>`).join("")}</tr>`).join("");
+}
+
+function focusCell(ri,j){activeCell={row:ri,col:j};document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`}
+function cellChange(inp,ri,j){rows[ri]["col"+j]=inp.value;dirty=true;document.getElementById("save-status").textContent="📝 Editando...";clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);if(inp.value.includes("/img"))showImgPicker(inp)}
+
+function cellKey(e,ri,j){
+  if(e.key==="Enter"){e.preventDefault();const n=document.querySelector(`#tbody tr:nth-child(${ri+2}) td:nth-child(${j+1}) input`);if(n)n.focus();else{addRow();setTimeout(()=>{const l=document.querySelector("#tbody tr:last-child td:first-child input");if(l)l.focus()},50)}}
+}
+
+async function autoSave(){
+  try{await fetch(`/api/projects/${projectId}/files/${fileId}/edit`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({headers,rows})});dirty=false;document.getElementById("save-status").textContent="💾 Guardado";setTimeout(()=>{if(!dirty)document.getElementById("save-status").textContent="📝 Sin cambios"},2000)}catch(e){document.getElementById("save-status").textContent="❌ Error al guardar"}
+}
+
+function addRow(){const r={};headers.forEach((_,j)=>r["col"+j]="");rows.push(r);render()}
+function deleteRow(){if(!activeCell)return;rows.splice(activeCell.row,1);dirty=true;document.getElementById("save-status").textContent="📝 Fila eliminada";render()}
+function formatCell(style){if(!activeCell)return;const v=rows[activeCell.row]["col"+activeCell.col];rows[activeCell.row]["col"+activeCell.col]=(style==="bold"?"**":"*")+v+(style==="bold"?"**":"*");dirty=true;render();const inp=document.querySelector(`#tbody tr:nth-child(${activeCell.row+1}) td:nth-child(${activeCell.col+1}) input`);if(inp)inp.focus()}
+
+// /img picker
+async function showImgPicker(inp){
+  if(imgFiles.length===0){const r=await fetch(`/api/projects/${projectId}/files?type=image`);const d=await r.json();imgFiles=d.files||[]}
+  if(imgFiles.length===0)return;
+  const el=document.getElementById("img-picker"),rect=inp.getBoundingClientRect();
+  el.style.left=rect.left+"px";el.style.top=(rect.bottom+4)+"px";el.style.minWidth=Math.max(240,rect.width)+"px";
+  el.innerHTML=imgFiles.map((f,i)=>`<div class="item" data-idx="${i}" onmouseenter="previewImg('${f.id}')" onclick="insertImg('${f.id}','${esc(f.name)}')">🖼️ ${esc(f.name)}<span style="color:#9CA3AF;font-size:10px;margin-left:auto">${(f.size/1024).toFixed(1)}KB</span></div>`).join("");
+  el.style.display="block";imgIdx=0
+}
+
+function previewImg(id){const pv=document.getElementById("img-preview"),el=document.getElementById("img-picker"),prect=el.getBoundingClientRect();pv.style.left=(prect.right+8)+"px";pv.style.top=prect.top+"px";pv.style.display="block";pv.innerHTML=`<img src="/api/projects/${projectId}/files/${id}/view" onerror="this.parentElement.style.display='none'" alt="Preview"><div style="font-size:11px;text-align:center;margin-top:4px;color:#6B7280">Preview</div>`}
+
+function hideImgPreview(){document.getElementById("img-preview").style.display="none";document.getElementById("img-preview").innerHTML=""}
+function insertImg(id,name){document.getElementById("img-picker").style.display="none";hideImgPreview();const inp=document.querySelector(`#tbody tr:nth-child(${activeCell.row+1}) td:nth-child(${activeCell.col+1}) input`);if(inp){inp.value=inp.value.replace(/\/img.*$/,"")+`[img: ${name}]`;rows[activeCell.row]["col"+activeCell.col]=inp.value;dirty=true;inp.focus()}}
+
+document.addEventListener("click",e=>{if(!e.target.closest("#img-picker")&&!e.target.closest("td input")){document.getElementById("img-picker").style.display="none";hideImgPreview()}})
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){document.getElementById("img-picker").style.display="none";hideImgPreview()}})
+
+// Auto-save al cerrar
+window.addEventListener("beforeunload",e=>{if(dirty){autoSave();e.preventDefault();e.returnValue=""}})
+
+init();
+</script>
+</body>
+</html>

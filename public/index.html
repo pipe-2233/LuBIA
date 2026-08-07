@@ -170,16 +170,18 @@
     .correos-meta strong{color:#111827;min-width:50px;display:inline-block}
 
     /* Editor */
-    .editor-toolbar{display:flex;gap:6px;padding:8px 0;align-items:center;flex-wrap:wrap;border-bottom:1px solid #E5E7EB;margin-bottom:8px}
-    .editor-toolbar button{padding:4px 10px;border:1px solid #D1D5DB;background:#fff;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
-    .editor-toolbar button:hover{background:#F3F4F6}
-    .editor-toolbar button.active{background:#EAB308;border-color:#EAB308}
-    .editable-table{width:100%;border-collapse:collapse;font-size:13px}
-    .editable-table th{background:#111827;color:#EAB308;padding:8px 10px;text-align:left;font-weight:600}
-    .editable-table td{padding:0;border:1px solid #E5E7EB}
-    .editable-table td input{width:100%;padding:6px 10px;border:none;font-size:13px;background:transparent;outline:none}
-    .editable-table td input:focus{background:#FEF9C3;outline:2px solid #EAB308;outline-offset:-2px}
-    .editable-table tr:nth-child(even) td input{background:#F9FAFB}
+    .editor-toolbar{display:flex;gap:6px;padding:8px 0;align-items:center;flex-wrap:wrap;border-bottom:1px solid #E5E7EB;margin-bottom:10px}
+    .editor-toolbar button{padding:5px 12px;border:1px solid #D1D5DB;background:#fff;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+    .editor-toolbar button:hover{background:#F3F4F6;border-color:#9CA3AF}
+    .editor-toolbar button.bold{font-weight:800}
+    .editor-toolbar button.italic{font-style:italic}
+    .editable-table-wrap{max-height:320px;overflow:auto;border:1px solid #D1D5DB;border-radius:8px}
+    .editable-table{width:max-content;min-width:100%;border-collapse:collapse;font-size:13px;table-layout:auto}
+    .editable-table th{background:#1a1a2e;color:#EAB308;padding:8px 14px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:0;z-index:1}
+    .editable-table td{padding:0;border:1px solid #E5E7EB;min-width:120px}
+    .editable-table td input{width:100%;padding:7px 10px;border:none;font-size:13px;background:#fff;outline:none;font-family:inherit;min-height:32px}
+    .editable-table td input:focus{background:#FEF9C3;box-shadow:inset 0 0 0 2px #EAB308}
+    .editable-table tr:nth-child(even) td input{background:#F8FAFC}
     .editable-table tr:nth-child(even) td input:focus{background:#FEF9C3}
     .editor-tabs{display:flex;gap:2px;margin-bottom:8px}
     .editor-tab{padding:6px 14px;border:none;background:#F3F4F6;color:#6B7280;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px 6px 0 0}
@@ -246,8 +248,8 @@
           <div class="editor-tabs"><button class="editor-tab active" onclick="switchEditorTab('view')">👁 Ver</button><button class="editor-tab" onclick="switchEditorTab('edit')">✏️ Editar</button><button class="editor-tab" onclick="switchEditorTab('ai')">🤖 IA</button><button class="editor-tab" onclick="switchEditorTab('audio')" id="editor-tab-audio" style="display:none">🎵 Audio</button></div>
           <div id="editor-view" class="editor-content"></div>
           <div id="editor-edit" class="editor-content" style="display:none">
-            <div class="editor-toolbar"><button onclick="formatCell('bold')" title="Negrita"><b>B</b></button><button onclick="formatCell('italic')" title="Cursiva"><i>I</i></button><button class="btn btn-outline btn-xs" onclick="addEditorRow()" title="Agregar fila">+ Fila</button><button class="btn btn-outline btn-xs" onclick="deleteEditorRow()" title="Eliminar fila">- Fila</button><span style="margin-left:auto;color:#6B7280;font-size:11px">💡 Escribí <code>/img</code> en una celda para insertar una imagen</span></div>
-            <div style="max-height:300px;overflow:auto"><table class="editable-table" id="editor-table"><thead id="editor-thead"></thead><tbody id="editor-tbody"></tbody></table></div>
+            <div class="editor-toolbar"><button class="bold" onclick="formatCell('bold')" title="Negrita"><b>B</b></button><button class="italic" onclick="formatCell('italic')" title="Cursiva"><i>I</i></button><button class="btn btn-outline btn-xs" onclick="addEditorRow()" title="Agregar fila">+ Fila</button><button class="btn btn-outline btn-xs" onclick="deleteEditorRow()" title="Eliminar fila">− Fila</button><span style="margin-left:auto;color:#6B7280;font-size:11px">💡 Escribí <code>/img</code> en una celda para insertar imagen</span></div>
+            <div class="editable-table-wrap"><table class="editable-table" id="editor-table"><thead id="editor-thead"></thead><tbody id="editor-tbody"></tbody></table></div>
             <div style="position:relative" id="img-picker-wrap"><div class="img-picker" id="img-picker"></div><div class="img-preview-large" id="img-preview-large"><img src="" alt="Preview"></div></div>
             <div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-primary btn-sm" onclick="saveEditorChanges()">💾 Guardar cambios</button><a class="btn btn-outline btn-sm" id="editor-download-link" target="_blank">⬇ Descargar</a></div>
           </div>
@@ -374,8 +376,8 @@ function saveChat(){localStorage.setItem(`chat_${currentProject.id}`,JSON.string
 let editorHeaders=[],editorRows=[],editorFilename="",activeCell=null;
 async function initExcelEditor(id,name){editorFilename=name;document.getElementById("editor-download-link").href=`/api/projects/${currentProject.id}/files/${id}/view`;switchEditorTab("view");try{const r=await fetch(`/api/projects/${currentProject.id}/files/${id}/preview`);const d=await r.json();if(d.error){document.getElementById("editor-view").innerHTML=`<p style="color:#EF4444">${d.error}</p>`;return}editorHeaders=d.headers||[];editorRows=d.rows||[];renderEditorView();renderEditorTable()}catch(e){document.getElementById("editor-view").innerHTML=`<p style="color:#EF4444">Error: ${e.message}</p>`}}
 function switchEditorTab(tab){document.querySelectorAll(".editor-tab").forEach(b=>b.classList.toggle("active",b.textContent.includes({"view":"👁","edit":"✏️","ai":"🤖","audio":"🎵"}[tab])));["view","edit","ai","audio"].forEach(t=>{const el=document.getElementById("editor-"+t);if(el)el.style.display=t===tab?"block":"none"})}
-function renderEditorView(){let h="<strong>"+esc(editorFilename)+"</strong><br>";const cols=editorHeaders.length;"<table class='comp-table' style='margin-top:8px'><thead><tr>"+editorHeaders.map(h=>"<th>"+esc(h)+"</th>").join("")+"</tr></thead><tbody>";let rowsHtml="";for(const r of editorRows.slice(0,20)){rowsHtml+="<tr>"+editorHeaders.map((_,j)=>"<td>"+esc(r["col"+j]||"")+"</td>").join("")+"</tr>"}h+=`<table class="comp-table" style="margin-top:8px"><thead><tr>${editorHeaders.map(hd=>`<th>${esc(hd)}</th>`).join("")}</tr></thead><tbody>${rowsHtml}</tbody></table>`;if(editorRows.length>20)h+=`<p style="font-size:11px;color:#6B7280;margin-top:4px">... y ${editorRows.length-20} filas más</p>`;document.getElementById("editor-view").innerHTML=h}
-function renderEditorTable(){const thead=document.getElementById("editor-thead"),tbody=document.getElementById("editor-tbody");thead.innerHTML="<tr>"+editorHeaders.map((h,i)=>`<th>${esc(h)}${i===0?' <button class="btn btn-xs btn-red" onclick="deleteEditorRow()" title="Eliminar fila">−</button>':''}</th>`).join("")+"</tr>";tbody.innerHTML=editorRows.map((r,ri)=>`<tr>${editorHeaders.map((_,j)=>`<td><input value="${r["col"+j]||''}" onfocus="activeCell={row:${ri},col:${j}}" oninput="handleCellInput(this,${ri},${j})" onkeydown="handleEditorKey(event,${ri},${j})"></td>`).join("")}</tr>`).join("")}
+function renderEditorView(){let h="<strong>"+esc(editorFilename)+"</strong><br>";const rowsHtml=editorRows.slice(0,50).map(r=>"<tr>"+editorHeaders.map((_,j)=>"<td style='padding:6px 10px;border-bottom:1px solid #F3F4F6'>"+esc(r["col"+j]||"")+"</td>").join("")+"</tr>").join("");h+=`<div class="editable-table-wrap"><table class="comp-table"><thead><tr>${editorHeaders.map(hd=>`<th>${esc(hd)}</th>`).join("")}</tr></thead><tbody>${rowsHtml}</tbody></table></div>`;if(editorRows.length>50)h+=`<p style="font-size:11px;color:#6B7280;margin-top:4px">... y ${editorRows.length-50} filas más</p>`;document.getElementById("editor-view").innerHTML=h}
+function renderEditorTable(){const thead=document.getElementById("editor-thead"),tbody=document.getElementById("editor-tbody");thead.innerHTML="<tr>"+editorHeaders.map(h=>`<th>${esc(h)}</th>`).join("")+"</tr>";tbody.innerHTML=editorRows.map((r,ri)=>`<tr>${editorHeaders.map((_,j)=>`<td><input value="${r["col"+j]||''}" onfocus="activeCell={row:${ri},col:${j}}" oninput="handleCellInput(this,${ri},${j})" onkeydown="handleEditorKey(event,${ri},${j})"></td>`).join("")}</tr>`).join("")}
 function handleCellInput(inp,ri,j){editorRows[ri]["col"+j]=inp.value;if(inp.value.endsWith("/img"))showImgPicker(inp)}
 function handleEditorKey(e,ri,j){if(e.key==="Enter"){e.preventDefault();const next=document.querySelector(`#editor-tbody tr:nth-child(${ri+2}) td:nth-child(${j+1}) input`);if(next)next.focus();else addEditorRow();setTimeout(()=>{const nr=document.querySelector(`#editor-tbody tr:last-child td:first-child input`);if(nr)nr.focus()},50)}}
 function addEditorRow(){const newRow={};editorHeaders.forEach((_,j)=>newRow["col"+j]="");editorRows.push(newRow);renderEditorTable()}

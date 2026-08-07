@@ -175,8 +175,7 @@ app.post("/api/projects/:id/files", fileUpload.array("files", 20), async (req, r
         sede_id: req.body.sedeId || null,
         name: file.originalname, mimetype: file.mimetype, size: file.size,
       }).select().single();
-      const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const storagePath = `${req.params.id}/${data.id}/${safeName}`;
+      const storagePath = `${req.params.id}/${data.id}`;
       const { error: uploadErr } = await sb.storage.from("lubia-files").upload(storagePath, file.buffer, { contentType: file.mimetype, upsert: true });
       if (uploadErr) {
         await sb.from("files").delete().eq("id", data.id);
@@ -212,9 +211,7 @@ app.get("/api/projects/:id/files/:fileId/view", async (req, res) => {
     const sb = getSupabaseAdmin();
     const { data: file } = await sb.from("files").select("*").eq("id", req.params.fileId).single();
     if (!file) return res.status(404).json({ error: "Archivo no encontrado en BD" });
-
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storagePath = `${file.project_id}/${file.id}/${safeName}`;
+    const storagePath = `${file.project_id}/${file.id}`;
     // Bucket público: usar URL pública
     const { data: urlData } = sb.storage.from("lubia-files").getPublicUrl(storagePath);
     if (urlData?.publicUrl) return res.redirect(urlData.publicUrl);
@@ -233,8 +230,7 @@ app.post("/api/transcribe-file/:fileId", async (req, res) => {
     const { data: file } = await getSupabaseAdmin().from("files").select("*").eq("id", req.params.fileId).single();
     if (!file) return res.status(404).json({ error: "Archivo no encontrado" });
     const sb = getSupabaseAdmin();
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storagePath = `${file.project_id}/${file.id}/${safeName}`;
+    const storagePath = `${file.project_id}/${file.id}`;
     const { data: dl } = await sb.storage.from("lubia-files").download(storagePath);
     if (!dl) return res.status(404).json({ error: "Archivo no encontrado en Storage" });
     const buf = Buffer.from(await dl.arrayBuffer());

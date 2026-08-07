@@ -156,7 +156,7 @@ app.post("/api/projects/:id/folders", async (req, res) => {
 app.delete("/api/projects/:id/folders/:folderId", async (req, res) => {
   try {
     const sb = getSupabaseAdmin();
-    await sb.from("files").update({ folder_id: null }).eq("folder_id", req.params.folderId);
+    await sb.from("files").delete().eq("folder_id", req.params.folderId);
     await sb.from("folders").delete().eq("id", req.params.folderId);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }

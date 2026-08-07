@@ -10,6 +10,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSy
 import { randomUUID } from "node:crypto";
 import { ImapFlow } from "imapflow";
 import { createClient as createSupabase } from "@supabase/supabase-js";
+import * as XLSX from "xlsx";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -133,10 +134,11 @@ function projectDir(projectId) {
 
 app.get("/api/projects/:id/files", async (req, res) => {
   try {
-    const sb = getSupabaseAdmin(), sedeId = req.query.sede_id || null;
+    const sb = getSupabaseAdmin(), sedeId = req.query.sede_id || null, filterType = req.query.type || null;
     let qF = sb.from("folders").select("*").eq("project_id", req.params.id);
     let qFi = sb.from("files").select("*").eq("project_id", req.params.id);
     if (sedeId) { qF = qF.eq("sede_id", sedeId); qFi = qFi.eq("sede_id", sedeId); }
+    if (filterType === "image") qFi = qFi.ilike("mimetype", "image/%");
     const [{ data: folders }, { data: files }] = await Promise.all([qF, qFi]);
     res.json({ folders: folders || [], files: files || [] });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -589,6 +591,79 @@ app.post("/api/correos/archivar", async (req, res) => {
     console.error("[Correos]", err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── Editor Excel ──────────────────────────────────────
+app.get("/api/projects/:id/files/:fileId/preview", async (req, res) => {
+  try {
+    const sb = getSupabaseAdmin();
+    const { data: file } = await sb.from("files").select("*").eq("id", req.params.fileId).single();
+    if (!file) return res.status(404).json({ error: "No encontrado" });
+    const storagePath = `${file.project_id}/${file.id}`;
+    const { data: dl } = await sb.storage.from("lubia-files").download(storagePath);
+    if (!dl) return res.status(404).json({ error: "Archivo no encontrado" });
+    const buf = Buffer.from(await dl.arrayBuffer());
+    const wb = XLSX.read(buf, { type: "buffer" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+    const headers = rows[0] || [];
+    const data = rows.slice(1).map((row, i) => {
+      const obj = {};
+      headers.forEach((h, j) => { obj[`col${j}`] = String(row[j] || ""); });
+      obj._rowIndex = i;
+      return obj;
+    });
+    res.json({ headers, rows: data, filename: file.name });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put("/api/projects/:id/files/:fileId/edit", async (req, res) => {
+  try {
+    const sb = getSupabaseAdmin();
+    const { data: file } = await sb.from("files").select("*").eq("id", req.params.fileId).single();
+    if (!file) return res.status(404).json({ error: "No encontrado" });
+
+    const { headers, rows: dataRows } = req.body;
+    const newWb = XLSX.utils.book_new();
+    const rows = [headers];
+    for (const r of dataRows) {
+      const row = headers.map((_, j) => r[`col${j}`] || "");
+      rows.push(row);
+    }
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(newWb, ws, "Hoja1");
+    const outBuf = XLSX.write(newWb, { type: "buffer", bookType: "xlsx" });
+
+    const storagePath = `${file.project_id}/${file.id}`;
+    await sb.storage.from("lubia-files").upload(storagePath, outBuf, { contentType: file.mimetype, upsert: true });
+    await sb.from("files").update({ size: outBuf.length }).eq("id", req.params.fileId);
+    res.json({ ok: true, size: outBuf.length });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post("/api/projects/:id/files/:fileId/ai-edit", async (req, res) => {
+  try {
+    const { command, headers, rows } = req.body;
+    if (!command) return res.status(400).json({ error: "Falta el comando" });
+
+    const tableText = [headers.join(" | "), ...rows.map((r, i) => headers.map((_, j) => `[${i},${j}] ${r[`col${j}`] || ""}`).join(" | "))].join("\n");
+
+    const msg = await getClaude().messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 4000,
+      system: `Eres un editor de planillas Excel. El usuario te dará un comando y una tabla. Debes modificar la tabla según el comando. Devuelve SOLO un JSON con: { "headers": ["col1","col2"...], "rows": [{"col0":"val","col1":"val"...}] }. Respeta el formato original de columnas. IMPORTANTE: solo el JSON, sin texto.`,
+      messages: [{ role: "user", content: `Comando: ${command}\n\nTabla actual:\n${tableText}` }],
+    });
+
+    const content = msg.content[0]?.text || "{}";
+    const jsonText = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const brace = jsonText.indexOf("{"), lastBrace = jsonText.lastIndexOf("}");
+    const clean = jsonText.slice(brace >= 0 ? brace : 0, lastBrace >= 0 ? lastBrace + 1 : undefined);
+    let result;
+    try { result = JSON.parse(clean); } catch { return res.status(500).json({ error: "Claude no devolvió JSON válido", raw: content }); }
+
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ── Iniciar ────────────────────────────────────────────

@@ -666,6 +666,24 @@ app.post("/api/projects/:id/files/:fileId/ai-edit", async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── Chat del proyecto ─────────────────────────────────
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { message, projectId, context } = req.body;
+    if (!message) return res.status(400).json({ error: "Mensaje vacío" });
+
+    const claude = getClaude();
+    const systemCtx = context || "";
+    const msg = await claude.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 2000,
+      system: `Eres LUBIA, el asistente IA de INGELUBSA S.A.S., especialista en lubricación industrial, monitoreo y confiabilidad. Respondé en español, de forma clara y técnica. Contexto del proyecto: ${systemCtx}`,
+      messages: [{ role: "user", content: message }],
+    });
+    res.json({ reply: msg.content[0]?.text || "Sin respuesta" });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── Iniciar ────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {

@@ -370,7 +370,21 @@ function navigateAtPicker(dir){const el=document.getElementById("at-picker");if(
 function selectAtFile(idx){const f=atPickerFiles[idx];if(!f)return;addChatAttachment(f);const inp=document.getElementById("chat-input");const val=inp.value;const pos=inp.selectionStart;const lastAt=val.lastIndexOf("@",pos-1);if(lastAt>=0){inp.value=val.slice(0,lastAt)+val.slice(pos)}hideAtPicker();inp.focus()}
 function addChatAttachment(f){if(chatAttachments.find(x=>x.id===f.id))return;chatAttachments.push(f);document.getElementById("chat-attach").innerHTML=chatAttachments.map(a=>`<span class="chat-chip">📎 ${esc(a.name)} <span class="remove" onclick="removeAttachment('${a.id}')">×</span></span>`).join("")}
 function removeAttachment(id){chatAttachments=chatAttachments.filter(x=>x.id!==id);document.getElementById("chat-attach").innerHTML=chatAttachments.map(a=>`<span class="chat-chip">📎 ${esc(a.name)} <span class="remove" onclick="removeAttachment('${a.id}')">×</span></span>`).join("")}
-function sendChat(){const inp=document.getElementById("chat-input");const txt=inp.value.trim();if(!txt&&chatAttachments.length===0)return;const msg={role:"user",content:txt,attachments:[...chatAttachments]};chatMessages.push(msg);chatMessages.push({role:"assistant",content:"🤖 (Chat no conectado a IA aún. Este es un placeholder. Cuando conectemos Claude, analizará tus archivos adjuntos.)",attachments:[]});saveChat();inp.value="";chatAttachments=[];document.getElementById("chat-attach").innerHTML="";renderChat()}
+function sendChat(){const inp=document.getElementById("chat-input");const txt=inp.value.trim();if(!txt&&chatAttachments.length===0)return;const msg={role:"user",content:txt,attachments:[...chatAttachments]};chatMessages.push(msg);inp.value="";chatAttachments=[];document.getElementById("chat-attach").innerHTML="";renderChat();const msgsEl=document.getElementById("chat-msgs");msgsEl.scrollTop=msgsEl.scrollHeight;saveChat();fetchChatResponse(txt)}
+
+async function fetchChatResponse(userMsg){
+  const loading={role:"assistant",content:'<span class="spinner"></span> Pensando...'};
+  chatMessages.push(loading);renderChat();const msgsEl=document.getElementById("chat-msgs");msgsEl.scrollTop=msgsEl.scrollHeight;saveChat();
+  try{
+    // Recolectar contexto del proyecto: nombres de archivos
+    let ctx="";if(currentProject){try{const r=await fetch(`/api/projects/${currentProject.id}/files`);const d=await r.json();const allFiles=[...d.files||[]];const names=allFiles.map(f=>f.name).join(", ");if(names)ctx=`Archivos del proyecto: ${names}. `}catch{}}
+    const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:userMsg,projectId:currentProject?.id,context:ctx})});
+    const d=await r.json();
+    chatMessages.pop(); // quitar loading
+    if(d.error){chatMessages.push({role:"assistant",content:"❌ "+d.error})}else{chatMessages.push({role:"assistant",content:d.reply||"(sin respuesta)"})}
+  }catch(e){chatMessages.pop();chatMessages.push({role:"assistant",content:"❌ Error: "+e.message})}
+  renderChat();msgsEl.scrollTop=msgsEl.scrollHeight;saveChat()
+}
 function saveChat(){localStorage.setItem(`chat_${currentProject.id}`,JSON.stringify(chatMessages))}
 
 // ── Settings ───────────────────────────────

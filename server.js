@@ -629,17 +629,37 @@ app.get("/api/projects/:id/files/:fileId/preview", async (req, res) => {
     const { data: dl } = await sb.storage.from("lubia-files").download(storagePath);
     if (!dl) return res.status(404).json({ error: "Archivo no encontrado" });
     const buf = Buffer.from(await dl.arrayBuffer());
-    const wb = XLSX.read(buf, { type: "buffer" });
+    const wb = XLSX.read(buf, { type: "buffer", cellStyles: true });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-    const headers = rows[0] || [];
+    const headers = (rows[0] || []).map(h => String(h || ""));
     const data = rows.slice(1).map((row, i) => {
       const obj = {};
       headers.forEach((h, j) => { obj[`col${j}`] = String(row[j] || ""); });
-      obj._rowIndex = i;
       return obj;
     });
-    res.json({ headers, rows: data, filename: file.name });
+    // Extraer estilos: colores, bordes
+    const styles = {};
+    for (const cellRef in sheet) {
+      if (cellRef.startsWith("!")) continue;
+      const cell = sheet[cellRef];
+      const addr = XLSX.utils.decode_cell(cellRef);
+      if (addr.r === 0) continue; // skip header
+      const ri = addr.r - 1, ci = addr.c;
+      const s = {};
+      if (cell.s) {
+        if (cell.s.fgColor && cell.s.fgColor.rgb) s.bg = "#" + cell.s.fgColor.rgb.slice(2);
+        if (cell.s.font && cell.s.font.color && cell.s.font.color.rgb) s.color = "#" + cell.s.font.color.rgb.slice(2);
+        if (cell.s.font && cell.s.font.bold) s.bold = true;
+        if (cell.s.font && cell.s.font.italic) s.italic = true;
+      }
+      if (Object.keys(s).length > 0) styles[`${ri}_${ci}`] = s;
+    }
+    // Obtener merges
+    const merges = sheet["!merges"] || [];
+    styles["_merges"] = merges.map(m => ({ r1: m.s.r - 1, c1: m.s.c, r2: m.e.r - 1, c2: m.e.c }));
+
+    res.json({ headers, rows: data, filename: file.name, cellStyles: styles });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -700,7 +720,7 @@ app.put("/api/projects/:id/files/:fileId/edit", async (req, res) => {
               const { data: imgData } = await sb.storage.from("lubia-files").download(`${imgFile.project_id}/${imgFile.id}`);
               if (imgData) {
                 const imgId = workbook.addImage({ buffer: Buffer.from(await imgData.arrayBuffer()), extension: imgFile.mimetype.split("/")[1] || "jpeg" });
-                sheet.addImage(imgId, { tl: { col: j, row: i + 1 }, ext: { width: 100, height: 80 } });
+                sheet.addImage(imgId, { tl: { col: j, row: i + 1 }, br: { col: j + 1, row: i + 2 }, editAs: "oneCell" });
                 sheet.getRow(i + 2).height = 90;
               }
             }

@@ -74,7 +74,7 @@
 <script>
 const params=new URLSearchParams(location.search);
 const fileId=params.get("id"),projectId=params.get("project");
-let headers=[],rows=[],activeCell=null,saveTimeout=null,dirty=false,imgFiles=[],imgIdx=0,cellStyles={},mergeStart=null,selectionRange=null;
+let headers=[],rows=[],activeCell=null,saveTimeout=null,dirty=false,imgFiles=[],imgIdx=0,cellStyles={},mergeStart=null,selectionRange=null,shiftHeld=false;
 
 function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
 
@@ -95,18 +95,20 @@ async function init(){
 
 function render(){
   document.getElementById("thead").innerHTML="<tr>"+headers.map(h=>"<th>"+esc(h)+"</th>").join("")+"</tr>";
-  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>`<tr>${headers.map((_,j)=>{const s=cellStyles[ri+"_"+j]||{};const bg=s.bg||"";const fc=s.color||"";const bw=s.bold?"bold":"normal";const fs=s.italic?"italic":"normal";let hl="";if(selectionRange&&ri>=selectionRange.r1&&ri<=selectionRange.r2&&j>=selectionRange.c1&&j<=selectionRange.c2)hl=" merge-hl";if(mergeStart){const r1=Math.min(ri,mergeStart.row),r2=Math.max(ri,mergeStart.row),c1=Math.min(j,mergeStart.col),c2=Math.max(j,mergeStart.col);if(ri>=r1&&ri<=r2&&j>=c1&&j<=c2)hl=" merge-hl"}return`<td><input value="${esc((r["col"+j]||"").replace(/\[img:.*?\]/,"").trim())}" onclick="focusCell(${ri},${j},event)" onfocus="quickFocus(${ri},${j})" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}" style="background:${bg};color:${fc};font-weight:${bw};font-style:${fs}${s.border?'border:2px solid #374151':''}${s.merge?'display:none':''}" class="${hl}"></td>`}).join("")}</tr>`).join("");
+  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>`<tr>${headers.map((_,j)=>{const s=cellStyles[ri+"_"+j]||{};const bg=s.bg||"";const fc=s.color||"";const bw=s.bold?"bold":"normal";const fs=s.italic?"italic":"normal";let hl="";if(selectionRange&&ri>=selectionRange.r1&&ri<=selectionRange.r2&&j>=selectionRange.c1&&j<=selectionRange.c2)hl=" merge-hl";if(mergeStart){const r1=Math.min(ri,mergeStart.row),r2=Math.max(ri,mergeStart.row),c1=Math.min(j,mergeStart.col),c2=Math.max(j,mergeStart.col);if(ri>=r1&&ri<=r2&&j>=c1&&j<=c2)hl=" merge-hl"}return`<td><input value="${esc((r["col"+j]||"").replace(/\[img:.*?\]/,"").trim())}" onclick="focusCell(${ri},${j},event)" onfocus="quickFocus(${ri},${j})" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}" style="background:${bg};color:${fc};font-weight:${bw};font-style:${fs};${s.border?'border:2px solid #374151;':''}${s.merge?'display:none;':''}" class="${hl}"></td>`}).join("")}</tr>`).join("");
 }
 function focusCell(ri,j,e){
-  activeCell={row:ri,col:j};
-  if(e&&typeof e.shiftKey!=="undefined"&&e.shiftKey&&activeCell){
+  if(e&&e.shiftKey&&activeCell){
     const r1=Math.min(activeCell.row,ri),r2=Math.max(activeCell.row,ri),c1=Math.min(activeCell.col,j),c2=Math.max(activeCell.col,j);
-    selectionRange={r1,r2,c1,c2};render();return
+    selectionRange={r1,r2,c1,c2};
+    document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`;
+    render();return
   }
+  activeCell={row:ri,col:j};
   selectionRange=null;
   document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`
 }
-function quickFocus(ri,j){activeCell={row:ri,col:j};selectionRange=null;document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`}
+function quickFocus(ri,j){if(!shiftHeld){activeCell={row:ri,col:j};selectionRange=null}document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`}
 function cellChange(inp,ri,j){rows[ri]["col"+j]=inp.value;dirty=true;document.getElementById("save-status").textContent="📝 Editando...";clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);if(inp.value.includes("/img"))showImgPicker(inp)}
 
 function cellKey(e,ri,j){
@@ -120,8 +122,8 @@ async function autoSave(){
 function addRow(){const r={};headers.forEach((_,j)=>r["col"+j]="");rows.push(r);render()}
 function deleteRow(){if(!activeCell)return;rows.splice(activeCell.row,1);dirty=true;document.getElementById("save-status").textContent="📝 Fila eliminada";render()}
 function getRangeCells(){if(!activeCell)return[];const cells=[];if(selectionRange){for(let ri=selectionRange.r1;ri<=selectionRange.r2;ri++)for(let ci=selectionRange.c1;ci<=selectionRange.c2;ci++)cells.push({row:ri,col:ci})}else{cells.push({row:activeCell.row,col:activeCell.col})}return cells}
-function formatCell(style){const cells=getRangeCells();if(!cells.length)return;cells.forEach(({row:ri,col:ci})=>{const k=ri+"_"+ci;cellStyles[k]=cellStyles[k]||{};cellStyles[k][style]=!cellStyles[k][style]});dirty=true;document.getElementById("save-status").textContent="📝 Editando...";render()}
-function applyCellColor(type,val){const cells=getRangeCells();if(!cells.length)return;cells.forEach(({row:ri,col:ci})=>{const k=ri+"_"+ci;cellStyles[k]=cellStyles[k]||{};cellStyles[k][type]=val});dirty=true;render()}function applyBorder(style){const cells=getRangeCells();if(!cells.length)return;cells.forEach(({row:ri,col:ci})=>{const k=ri+"_"+ci;cellStyles[k]=cellStyles[k]||{};cellStyles[k].border=style==="none"?null:style});dirty=true;document.getElementById("border-style").value="";render()}async function manualSave(){if(!dirty)return;await autoSave();document.getElementById("save-status").textContent="💾 Guardado"}
+function formatCell(style){const cells=getRangeCells();if(!cells.length)return;cells.forEach(({row:ri,col:ci})=>{const k=ri+"_"+ci;cellStyles[k]=cellStyles[k]||{};cellStyles[k][style]=!cellStyles[k][style]});dirty=true;document.getElementById("save-status").textContent="📝 Editando...";clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);render()}
+function applyCellColor(type,val){const cells=getRangeCells();if(!cells.length)return;cells.forEach(({row:ri,col:ci})=>{const k=ri+"_"+ci;cellStyles[k]=cellStyles[k]||{};cellStyles[k][type]=val});dirty=true;document.getElementById("save-status").textContent="📝 Editando...";clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);render()}function applyBorder(style){const cells=getRangeCells();if(!cells.length)return;cells.forEach(({row:ri,col:ci})=>{const k=ri+"_"+ci;cellStyles[k]=cellStyles[k]||{};cellStyles[k].border=style==="none"?null:style});dirty=true;document.getElementById("save-status").textContent="📝 Editando...";document.getElementById("border-style").value="";clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);render()}async function manualSave(){if(!dirty)return;await autoSave();document.getElementById("save-status").textContent="💾 Guardado"}
 function mergeSelected(){if(!activeCell)return;if(!mergeStart){mergeStart={...activeCell};document.getElementById("merge-status").style.display="inline";render();return}const r1=Math.min(activeCell.row,mergeStart.row),r2=Math.max(activeCell.row,mergeStart.row),c1=Math.min(activeCell.col,mergeStart.col),c2=Math.max(activeCell.col,mergeStart.col);if(r1===r2&&c1===c2){mergeStart=null;document.getElementById("merge-status").style.display="none";render();return}cellStyles["_merges"]=cellStyles["_merges"]||[];cellStyles["_merges"].push({r1,c1,r2,c2});for(let ri=r1;ri<=r2;ri++)for(let ci=c1;ci<=c2;ci++){if(ri===r1&&ci===c1)continue;cellStyles[ri+"_"+ci]=cellStyles[ri+"_"+ci]||{};cellStyles[ri+"_"+ci].merge=true}mergeStart=null;document.getElementById("merge-status").style.display="none";dirty=true;clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);render()}function unmergeCell(){if(!activeCell)return;cellStyles["_merges"]=(cellStyles["_merges"]||[]).filter(m=>!(m.r1<=activeCell.row&&m.r2>=activeCell.row&&m.c1<=activeCell.col&&m.c2>=activeCell.col));for(let ri=0;ri<rows.length;ri++)for(let ci=0;ci<headers.length;ci++)if(cellStyles[ri+"_"+ci])delete cellStyles[ri+"_"+ci].merge;mergeStart=null;document.getElementById("merge-status").style.display="none";dirty=true;clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);render()}
 
 // /img picker
@@ -140,7 +142,8 @@ function hideImgPreview(){document.getElementById("img-preview").style.display="
 function insertImg(id,name){document.getElementById("img-picker").style.display="none";hideImgPreview();const inp=document.querySelector(`#tbody tr:nth-child(${activeCell.row+1}) td:nth-child(${activeCell.col+1}) input`);if(inp){inp.value=inp.value.replace(/\/img.*$/,"")+`[img: ${name}]`;rows[activeCell.row]["col"+activeCell.col]=inp.value;dirty=true;inp.focus();clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000)}}
 
 document.addEventListener("click",e=>{if(!e.target.closest("#img-picker")&&!e.target.closest("td input")){document.getElementById("img-picker").style.display="none";hideImgPreview()}})
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){mergeStart=null;document.getElementById("merge-status").style.display="none";document.getElementById("img-picker").style.display="none";hideImgPreview();render()}})
+document.addEventListener("keydown",e=>{if(e.key==="Shift")shiftHeld=true;if(e.key==="Escape"){mergeStart=null;document.getElementById("merge-status").style.display="none";document.getElementById("img-picker").style.display="none";hideImgPreview();render()}})
+document.addEventListener("keyup",e=>{if(e.key==="Shift")shiftHeld=false})
 
 // Auto-save al cerrar
 window.addEventListener("beforeunload",e=>{if(dirty){autoSave();e.preventDefault();e.returnValue=""}})

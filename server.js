@@ -305,13 +305,32 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
 // ── Claude: Extraer datos estructurados ──────────────────
 app.post("/api/extraer", async (req, res) => {
   try {
-    const { transcription, template } = req.body;
+    const { transcription, template, templates } = req.body;
     if (!transcription) return res.status(400).json({ error: "Falta transcripción" });
 
-    const templatePrompt = getTemplatePrompt(template || "ruta_lubricacion");
+    let templatePrompt;
+    if (templates && templates.length > 0) {
+      const list = templates.map(t => `- ${t.name}: ${(t.columns||[]).join(", ")}`).join("\n");
+      templatePrompt = `Eres un asistente técnico de INGELUBSA S.A.S. Extrae datos según las plantillas disponibles del proyecto.
+
+Plantillas disponibles:
+${list}
+
+El audio puede mencionar qué plantilla usar. Detectala y extrae datos en ese formato. Devuelve SOLO JSON:
+{
+  "plantilla": "nombre de la plantilla usada",
+  "activo": "Nombre del equipo",
+  "componentes": [{ "nombre": "", "cantidad": "", "lubricante": "", "frecuencia": "", "ubicacion": "", "observaciones": "" }],
+  "faltantes": ["datos críticos que faltan"],
+  "preguntas": ["preguntas para completar"]
+}
+Si no se detecta plantilla, usá columnas genéricas. IMPORTANTE: solo JSON.`;
+    } else {
+      templatePrompt = getTemplatePrompt(template || "ruta_lubricacion");
+    }
 
     const msg = await getClaude().messages.create({
-      model: "claude-sonnet-5",
+      model: "claude-3-5-sonnet-latest",
       max_tokens: 2000,
       system: templatePrompt,
       messages: [{ role: "user", content: `Extrae los datos de este audio de campo:\n\n${transcription}` }],
@@ -689,6 +708,63 @@ app.post("/api/chat", async (req, res) => {
       messages: [{ role: "user", content: message }],
     });
     res.json({ reply: msg.content[0]?.text || "Sin respuesta" });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Plantillas ────────────────────────────────────────
+app.get("/api/projects/:id/templates", async (req, res) => {
+  try {
+    const { data } = await getSupabaseAdmin().from("templates").select("*").eq("project_id", req.params.id).order("created_at");
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post("/api/projects/:id/templates", async (req, res) => {
+  const { name, description, columns } = req.body;
+  if (!name) return res.status(400).json({ error: "Nombre requerido" });
+  try {
+    const { data } = await getSupabaseAdmin().from("templates").insert({
+      project_id: req.params.id, name, description: description || "", columns: columns || [],
+    }).select().single();
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put("/api/projects/:id/templates/:tid", async (req, res) => {
+  const { name, description, columns } = req.body;
+  try {
+    await getSupabaseAdmin().from("templates").update({ name, description, columns }).eq("id", req.params.tid).eq("project_id", req.params.id);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete("/api/projects/:id/templates/:tid", async (req, res) => {
+  try {
+    await getSupabaseAdmin().from("templates").delete().eq("id", req.params.tid).eq("project_id", req.params.id);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post("/api/projects/:id/templates/import", async (req, res) => {
+  try {
+    const { sourceProjectId, sourceTemplateId } = req.body;
+    const { data: source } = await getSupabaseAdmin().from("templates").select("*").eq("id", sourceTemplateId).single();
+    if (!source) return res.status(404).json({ error: "Plantilla origen no encontrada" });
+    const { data } = await getSupabaseAdmin().from("templates").insert({
+      project_id: req.params.id, name: source.name + " (importada)", description: source.description, columns: source.columns,
+    }).select().single();
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post("/api/projects/:id/templates/upload", upload.single("file"), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No se recibió archivo" });
+  try {
+    const wb = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+    const headers = (rows[0] || []).map(h => String(h || "").trim()).filter(h => h);
+    res.json({ name: req.file.originalname.replace(/\.[^.]+$/, ""), columns: headers });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

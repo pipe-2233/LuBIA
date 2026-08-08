@@ -671,6 +671,7 @@ app.post("/api/chat", async (req, res) => {
   try {
     const { message, projectId, context } = req.body;
     if (!message) return res.status(400).json({ error: "Mensaje vacío" });
+    if (!process.env.CLAUDE_API_KEY) return res.status(500).json({ error: "CLAUDE_API_KEY no configurada en el servidor" });
 
     const claude = getClaude();
     const systemCtx = context || "";

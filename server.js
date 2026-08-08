@@ -207,6 +207,13 @@ app.put("/api/projects/:id/files/:fileId", async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.patch("/api/projects/:id/files/:fileId/move", async (req, res) => {
+  try {
+    await getSupabaseAdmin().from("files").update({ folder_id: req.body.folderId || null }).eq("id", req.params.fileId).eq("project_id", req.params.id);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── Visualizar archivo ────────────────────────────────
 app.get("/api/projects/:id/files/:fileId/view", async (req, res) => {
   try {

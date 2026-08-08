@@ -95,17 +95,18 @@ async function init(){
 
 function render(){
   document.getElementById("thead").innerHTML="<tr>"+headers.map(h=>"<th>"+esc(h)+"</th>").join("")+"</tr>";
-  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>`<tr>${headers.map((_,j)=>{const s=cellStyles[ri+"_"+j]||{};const bg=s.bg||"";const fc=s.color||"";const bw=s.bold?"bold":"normal";const fs=s.italic?"italic":"normal";let hl="";if(selectionRange&&ri>=selectionRange.r1&&ri<=selectionRange.r2&&j>=selectionRange.c1&&j<=selectionRange.c2)hl=" merge-hl";if(mergeStart){const r1=Math.min(ri,mergeStart.row),r2=Math.max(ri,mergeStart.row),c1=Math.min(j,mergeStart.col),c2=Math.max(j,mergeStart.col);if(ri>=r1&&ri<=r2&&j>=c1&&j<=c2)hl=" merge-hl"}return`<td><input value="${esc((r["col"+j]||"").replace(/\[img:.*?\]/,"").trim())}" onfocus="focusCell(${ri},${j},event)" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}" style="background:${bg};color:${fc};font-weight:${bw};font-style:${fs}${s.border?'border:2px solid #374151':''}${s.merge?'display:none':''}" class="${hl}"></td>`}).join("")}</tr>`).join("");
+  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>`<tr>${headers.map((_,j)=>{const s=cellStyles[ri+"_"+j]||{};const bg=s.bg||"";const fc=s.color||"";const bw=s.bold?"bold":"normal";const fs=s.italic?"italic":"normal";let hl="";if(selectionRange&&ri>=selectionRange.r1&&ri<=selectionRange.r2&&j>=selectionRange.c1&&j<=selectionRange.c2)hl=" merge-hl";if(mergeStart){const r1=Math.min(ri,mergeStart.row),r2=Math.max(ri,mergeStart.row),c1=Math.min(j,mergeStart.col),c2=Math.max(j,mergeStart.col);if(ri>=r1&&ri<=r2&&j>=c1&&j<=c2)hl=" merge-hl"}return`<td><input value="${esc((r["col"+j]||"").replace(/\[img:.*?\]/,"").trim())}" onclick="focusCell(${ri},${j},event)" onfocus="quickFocus(${ri},${j})" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}" style="background:${bg};color:${fc};font-weight:${bw};font-style:${fs}${s.border?'border:2px solid #374151':''}${s.merge?'display:none':''}" class="${hl}"></td>`}).join("")}</tr>`).join("");
 }
 function focusCell(ri,j,e){
-  if(e&&e.shiftKey&&activeCell){
+  activeCell={row:ri,col:j};
+  if(e&&typeof e.shiftKey!=="undefined"&&e.shiftKey&&activeCell){
     const r1=Math.min(activeCell.row,ri),r2=Math.max(activeCell.row,ri),c1=Math.min(activeCell.col,j),c2=Math.max(activeCell.col,j);
     selectionRange={r1,r2,c1,c2};render();return
   }
-  activeCell={row:ri,col:j};selectionRange=null;
-  document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`;render()
-  setTimeout(()=>{const inp=document.querySelector(`#tbody tr:nth-child(${ri+1}) td:nth-child(${j+1}) input`);if(inp)inp.focus()},10)
+  selectionRange=null;
+  document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`
 }
+function quickFocus(ri,j){activeCell={row:ri,col:j};selectionRange=null;document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`}
 function cellChange(inp,ri,j){rows[ri]["col"+j]=inp.value;dirty=true;document.getElementById("save-status").textContent="📝 Editando...";clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);if(inp.value.includes("/img"))showImgPicker(inp)}
 
 function cellKey(e,ri,j){

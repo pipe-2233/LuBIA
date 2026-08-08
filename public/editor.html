@@ -19,7 +19,7 @@
     .editable-table{border-collapse:collapse;font-size:13px;table-layout:fixed}
     .editable-table th{background:#F3F4F6;color:#374151;padding:6px 10px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:0;z-index:2;border:1px solid #D1D5DB;min-width:100px;font-size:12px}
     .editable-table td{padding:0;border:1px solid #D1D5DB}
-    .editable-table td input{width:100%;padding:5px 8px;border:none;font-size:13px;background:#fff;outline:none;font-family:system-ui;min-height:28px}
+    .editable-table td input{width:100%;height:100%;padding:5px 8px;border:none;font-size:13px;background:#fff;outline:none;font-family:system-ui;min-height:28px}
     .editable-table td input:focus{background:#E8F0FE;box-shadow:inset 0 0 0 2px #4285F4}
     .editable-table td input.merge-hl{background:#D2E3FC!important;box-shadow:inset 0 0 0 1px #4285F4!important}
     .editable-table tr:nth-child(even) td input{background:#FAFAFA}
@@ -95,9 +95,39 @@ async function init(){
   }catch(e){document.getElementById("filename").textContent="Error: "+e.message}
 }
 
+// Mapea qué celdas son "origen" de un merge (llevan colspan/rowspan) y cuáles quedan
+// tapadas por un merge (no se dibujan, como hace Excel de verdad con <td> combinados).
+function buildMergeMap(){
+  const map={};
+  for(const m of (cellStyles["_merges"]||[])){
+    const r1=Number(m.r1),c1=Number(m.c1),r2=Number(m.r2),c2=Number(m.c2);
+    if(!(r2>=r1&&c2>=c1))continue;
+    map[r1+"_"+c1]={rowspan:r2-r1+1,colspan:c2-c1+1};
+    for(let ri=r1;ri<=r2;ri++)for(let ci=c1;ci<=c2;ci++){
+      if(ri===r1&&ci===c1)continue;
+      map[ri+"_"+ci]="covered";
+    }
+  }
+  return map;
+}
 function render(){
+  const mergeMap=buildMergeMap();
   document.getElementById("thead").innerHTML="<tr>"+headers.map(h=>"<th>"+esc(h)+"</th>").join("")+"</tr>";
-  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>`<tr>${headers.map((_,j)=>{const s=cellStyles[ri+"_"+j]||{};const bg=s.bg||"";const fc=s.color||"";const bw=s.bold?"bold":"normal";const fs=s.italic?"italic":"normal";let hl="";if(selectionRange&&ri>=selectionRange.r1&&ri<=selectionRange.r2&&j>=selectionRange.c1&&j<=selectionRange.c2)hl=" merge-hl";if(mergeStart&&activeCell){const r1=Math.min(activeCell.row,mergeStart.row),r2=Math.max(activeCell.row,mergeStart.row),c1=Math.min(activeCell.col,mergeStart.col),c2=Math.max(activeCell.col,mergeStart.col);if(ri>=r1&&ri<=r2&&j>=c1&&j<=c2)hl=" merge-hl"}return`<td><input value="${esc((r["col"+j]||"").replace(/\[img:.*?\]/,"").trim())}" onclick="focusCell(${ri},${j},event)" onfocus="quickFocus(${ri},${j})" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}" style="background:${bg};color:${fc};font-weight:${bw};font-style:${fs};${s.border?'border:2px solid #374151;':''}${s.merge?'display:none;':''}" class="${hl}"></td>`}).join("")}</tr>`).join("");
+  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>{
+    let tds="";
+    headers.forEach((_,j)=>{
+      const mk=mergeMap[ri+"_"+j];
+      if(mk==="covered")return; // la celda de arriba/izquierda ya cubre esta posición con colspan/rowspan
+      const s=cellStyles[ri+"_"+j]||{};
+      const bg=s.bg||"";const fc=s.color||"";const bw=s.bold?"bold":"normal";const fs=s.italic?"italic":"normal";
+      let hl="";
+      if(selectionRange&&ri>=selectionRange.r1&&ri<=selectionRange.r2&&j>=selectionRange.c1&&j<=selectionRange.c2)hl=" merge-hl";
+      if(mergeStart&&activeCell){const r1=Math.min(activeCell.row,mergeStart.row),r2=Math.max(activeCell.row,mergeStart.row),c1=Math.min(activeCell.col,mergeStart.col),c2=Math.max(activeCell.col,mergeStart.col);if(ri>=r1&&ri<=r2&&j>=c1&&j<=c2)hl=" merge-hl"}
+      const span=mk?` rowspan="${mk.rowspan}" colspan="${mk.colspan}"`:"";
+      tds+=`<td${span}><input value="${esc((r["col"+j]||"").replace(/\[img:.*?\]/,"").trim())}" onclick="focusCell(${ri},${j},event)" onfocus="quickFocus(${ri},${j})" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}" style="background:${bg};color:${fc};font-weight:${bw};font-style:${fs};${s.border?'border:2px solid #374151;':''}" class="${hl}"></td>`;
+    });
+    return `<tr>${tds}</tr>`;
+  }).join("");
 }
 function focusCell(ri,j,e){
   if(e&&e.shiftKey&&activeCell){
@@ -114,7 +144,9 @@ function quickFocus(ri,j){if(!shiftHeld){activeCell={row:ri,col:j};selectionRang
 function cellChange(inp,ri,j){beginEdit();rows[ri]["col"+j]=inp.value;markDirty();if(inp.value.includes("/img"))showImgPicker(inp)}
 
 function cellKey(e,ri,j){
-  if(e.key==="Enter"){e.preventDefault();const n=document.querySelector(`#tbody tr:nth-child(${ri+2}) td:nth-child(${j+1}) input`);if(n)n.focus();else{addRow();setTimeout(()=>{const l=document.querySelector("#tbody tr:last-child td:first-child input");if(l)l.focus()},50)}}
+  // Se busca por data-row/data-col (no por posición nth-child) porque las filas con
+  // celdas combinadas tienen menos <td> que las demás y la posición no coincide.
+  if(e.key==="Enter"){e.preventDefault();const n=document.querySelector(`#tbody input[data-row="${ri+1}"][data-col="${j}"]`);if(n)n.focus();else{addRow();setTimeout(()=>{const l=document.querySelector(`#tbody input[data-row="${rows.length-1}"][data-col="0"]`);if(l)l.focus()},50)}}
 }
 
 async function autoSave(){
@@ -146,11 +178,6 @@ function applyMerge(r1,c1,r2,c2){
   beginEdit();
   cellStyles["_merges"]=cellStyles["_merges"]||[];
   cellStyles["_merges"].push({r1,c1,r2,c2});
-  for(let ri=r1;ri<=r2;ri++)for(let ci=c1;ci<=c2;ci++){
-    if(ri===r1&&ci===c1)continue;
-    cellStyles[ri+"_"+ci]=cellStyles[ri+"_"+ci]||{};
-    cellStyles[ri+"_"+ci].merge=true;
-  }
   activeCell={row:r1,col:c1};
   markDirty();
 }
@@ -174,7 +201,7 @@ function mergeSelected(){
   applyMerge(r1,c1,r2,c2);
   render();
 }
-function unmergeCell(){if(!activeCell)return;beginEdit();cellStyles["_merges"]=(cellStyles["_merges"]||[]).filter(m=>!(m.r1<=activeCell.row&&m.r2>=activeCell.row&&m.c1<=activeCell.col&&m.c2>=activeCell.col));for(let ri=0;ri<rows.length;ri++)for(let ci=0;ci<headers.length;ci++)if(cellStyles[ri+"_"+ci])delete cellStyles[ri+"_"+ci].merge;mergeStart=null;document.getElementById("merge-status").style.display="none";markDirty();render()}
+function unmergeCell(){if(!activeCell)return;beginEdit();cellStyles["_merges"]=(cellStyles["_merges"]||[]).filter(m=>!(m.r1<=activeCell.row&&m.r2>=activeCell.row&&m.c1<=activeCell.col&&m.c2>=activeCell.col));mergeStart=null;document.getElementById("merge-status").style.display="none";markDirty();render()}
 
 // /img picker
 async function showImgPicker(inp){
@@ -189,7 +216,7 @@ async function showImgPicker(inp){
 function previewImg(id){const pv=document.getElementById("img-preview"),el=document.getElementById("img-picker"),prect=el.getBoundingClientRect();pv.style.left=(prect.right+8)+"px";pv.style.top=prect.top+"px";pv.style.display="block";pv.innerHTML=`<img src="/api/projects/${projectId}/files/${id}/view" onerror="this.parentElement.style.display='none'" alt="Preview"><div style="font-size:11px;text-align:center;margin-top:4px;color:#6B7280">Preview</div>`}
 
 function hideImgPreview(){document.getElementById("img-preview").style.display="none";document.getElementById("img-preview").innerHTML=""}
-function insertImg(id,name){document.getElementById("img-picker").style.display="none";hideImgPreview();const inp=document.querySelector(`#tbody tr:nth-child(${activeCell.row+1}) td:nth-child(${activeCell.col+1}) input`);if(inp){beginEdit();inp.value=inp.value.replace(/\/img.*$/,"")+`[img: ${name}]`;rows[activeCell.row]["col"+activeCell.col]=inp.value;markDirty();inp.focus()}}
+function insertImg(id,name){document.getElementById("img-picker").style.display="none";hideImgPreview();const inp=document.querySelector(`#tbody input[data-row="${activeCell.row}"][data-col="${activeCell.col}"]`);if(inp){beginEdit();inp.value=inp.value.replace(/\/img.*$/,"")+`[img: ${name}]`;rows[activeCell.row]["col"+activeCell.col]=inp.value;markDirty();inp.focus()}}
 
 document.addEventListener("click",e=>{if(!e.target.closest("#img-picker")&&!e.target.closest("td input")){document.getElementById("img-picker").style.display="none";hideImgPreview()}})
 document.addEventListener("keydown",e=>{if(e.key==="Shift")shiftHeld=true;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&!e.target.closest("td input")){e.preventDefault();undo();return}if(e.key==="Escape"){mergeStart=null;document.getElementById("merge-status").style.display="none";document.getElementById("img-picker").style.display="none";hideImgPreview();render()}})

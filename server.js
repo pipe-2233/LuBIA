@@ -720,7 +720,7 @@ app.put("/api/projects/:id/files/:fileId/edit", async (req, res) => {
               const { data: imgData } = await sb.storage.from("lubia-files").download(`${imgFile.project_id}/${imgFile.id}`);
               if (imgData) {
                 const imgId = workbook.addImage({ buffer: Buffer.from(await imgData.arrayBuffer()), extension: imgFile.mimetype.split("/")[1] || "jpeg" });
-                sheet.addImage(imgId, { tl: { col: j, row: i + 1 }, br: { col: j + 1, row: i + 2 }, editAs: "oneCell" });
+                sheet.addImage(imgId, { tl: { col: j, row: i + 1 }, br: { col: j + 1, row: i + 2 } });
                 sheet.getRow(i + 2).height = 90;
               }
             }

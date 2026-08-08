@@ -304,7 +304,7 @@ app.post("/api/extraer", async (req, res) => {
     const templatePrompt = getTemplatePrompt(template || "ruta_lubricacion");
 
     const msg = await getClaude().messages.create({
-      model: "claude-3-5-sonnet-latest",
+      model: "claude-sonnet-5",
       max_tokens: 2000,
       system: templatePrompt,
       messages: [{ role: "user", content: `Extrae los datos de este audio de campo:\n\n${transcription}` }],
@@ -649,7 +649,7 @@ app.post("/api/projects/:id/files/:fileId/ai-edit", async (req, res) => {
     const tableText = [headers.join(" | "), ...rows.map((r, i) => headers.map((_, j) => `[${i},${j}] ${r[`col${j}`] || ""}`).join(" | "))].join("\n");
 
     const msg = await getClaude().messages.create({
-      model: "claude-3-5-sonnet-latest",
+      model: "claude-sonnet-5",
       max_tokens: 4000,
       system: `Eres un editor de planillas Excel. El usuario te dará un comando y una tabla. Debes modificar la tabla según el comando. Devuelve SOLO un JSON con: { "headers": ["col1","col2"...], "rows": [{"col0":"val","col1":"val"...}] }. Respeta el formato original de columnas. IMPORTANTE: solo el JSON, sin texto.`,
       messages: [{ role: "user", content: `Comando: ${command}\n\nTabla actual:\n${tableText}` }],
@@ -676,7 +676,7 @@ app.post("/api/chat", async (req, res) => {
     const claude = getClaude();
     const systemCtx = context || "";
     const msg = await claude.messages.create({
-      model: "claude-3-5-sonnet-latest",
+      model: "claude-sonnet-5",
       max_tokens: 2000,
       system: `Eres LUBIA, el asistente IA de INGELUBSA S.A.S., especialista en lubricación industrial, monitoreo y confiabilidad. Respondé en español, de forma clara y técnica. Contexto del proyecto: ${systemCtx}`,
       messages: [{ role: "user", content: message }],

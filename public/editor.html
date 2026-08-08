@@ -38,7 +38,7 @@
 
 <div class="header">
   <div><h1>LUBIA Editor</h1><span class="filename" id="filename">Cargando...</span></div>
-  <div class="save-status" id="save-status">📝 Sin cambios</div>
+  <div class="save-status"><button class="btn btn-primary btn-sm" onclick="manualSave()" title="Guardar ahora" style="margin-right:8px;padding:4px 12px;font-size:12px">💾 Guardar</button><span id="save-status">📝 Sin cambios</span></div>
 </div>
 
 <div class="toolbar">
@@ -74,7 +74,7 @@
 <script>
 const params=new URLSearchParams(location.search);
 const fileId=params.get("id"),projectId=params.get("project");
-let headers=[],rows=[],activeCell=null,saveTimeout=null,dirty=false,imgFiles=[],imgIdx=0,cellStyles={},mergeStart=null;
+let headers=[],rows=[],activeCell=null,saveTimeout=null,dirty=false,imgFiles=[],imgIdx=0,cellStyles={},mergeStart=null,selectionRange=null;
 
 function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
 
@@ -95,9 +95,17 @@ async function init(){
 
 function render(){
   document.getElementById("thead").innerHTML="<tr>"+headers.map(h=>"<th>"+esc(h)+"</th>").join("")+"</tr>";
-  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>`<tr>${headers.map((_,j)=>{const s=cellStyles[ri+"_"+j]||{};const bg=s.bg||"";const fc=s.color||"";const bw=s.bold?"bold":"normal";const fs=s.italic?"italic":"normal";let hl="";if(mergeStart){const r1=Math.min(ri,mergeStart.row),r2=Math.max(ri,mergeStart.row),c1=Math.min(j,mergeStart.col),c2=Math.max(j,mergeStart.col);if(ri>=r1&&ri<=r2&&j>=c1&&j<=c2)hl=" merge-hl"}return`<td><input value="${esc((r["col"+j]||"").replace(/\[img:.*?\]/,"").trim())}" onfocus="focusCell(${ri},${j})" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}" style="background:${bg};color:${fc};font-weight:${bw};font-style:${fs}${s.border?'border:2px solid #374151':''}${s.merge?'display:none':''}" class="${hl}"></td>`}).join("")}</tr>`).join("");
+  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>`<tr>${headers.map((_,j)=>{const s=cellStyles[ri+"_"+j]||{};const bg=s.bg||"";const fc=s.color||"";const bw=s.bold?"bold":"normal";const fs=s.italic?"italic":"normal";let hl="";if(selectionRange&&ri>=selectionRange.r1&&ri<=selectionRange.r2&&j>=selectionRange.c1&&j<=selectionRange.c2)hl=" merge-hl";if(mergeStart){const r1=Math.min(ri,mergeStart.row),r2=Math.max(ri,mergeStart.row),c1=Math.min(j,mergeStart.col),c2=Math.max(j,mergeStart.col);if(ri>=r1&&ri<=r2&&j>=c1&&j<=c2)hl=" merge-hl"}return`<td><input value="${esc((r["col"+j]||"").replace(/\[img:.*?\]/,"").trim())}" onfocus="focusCell(${ri},${j},event)" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}" style="background:${bg};color:${fc};font-weight:${bw};font-style:${fs}${s.border?'border:2px solid #374151':''}${s.merge?'display:none':''}" class="${hl}"></td>`}).join("")}</tr>`).join("");
 }
-function focusCell(ri,j){activeCell={row:ri,col:j};document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`}
+function focusCell(ri,j,e){
+  if(e&&e.shiftKey&&activeCell){
+    const r1=Math.min(activeCell.row,ri),r2=Math.max(activeCell.row,ri),c1=Math.min(activeCell.col,j),c2=Math.max(activeCell.col,j);
+    selectionRange={r1,r2,c1,c2};render();return
+  }
+  activeCell={row:ri,col:j};selectionRange=null;
+  document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`;render()
+  setTimeout(()=>{const inp=document.querySelector(`#tbody tr:nth-child(${ri+1}) td:nth-child(${j+1}) input`);if(inp)inp.focus()},10)
+}
 function cellChange(inp,ri,j){rows[ri]["col"+j]=inp.value;dirty=true;document.getElementById("save-status").textContent="📝 Editando...";clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);if(inp.value.includes("/img"))showImgPicker(inp)}
 
 function cellKey(e,ri,j){
@@ -110,9 +118,9 @@ async function autoSave(){
 
 function addRow(){const r={};headers.forEach((_,j)=>r["col"+j]="");rows.push(r);render()}
 function deleteRow(){if(!activeCell)return;rows.splice(activeCell.row,1);dirty=true;document.getElementById("save-status").textContent="📝 Fila eliminada";render()}
-function formatCell(style){if(!activeCell)return;const k=activeCell.row+"_"+activeCell.col;cellStyles[k]=cellStyles[k]||{};cellStyles[k][style]=!cellStyles[k][style];dirty=true;document.getElementById("save-status").textContent="📝 Editando...";const ri=activeCell.row,ci=activeCell.col;render();setTimeout(()=>{const inp=document.querySelector(`#tbody tr:nth-child(${ri+1}) td:nth-child(${ci+1}) input`);if(inp)inp.focus()},10)}
-function applyCellColor(type,val){if(!activeCell)return;const k=activeCell.row+"_"+activeCell.col;cellStyles[k]=cellStyles[k]||{};cellStyles[k][type]=val;dirty=true;const ri=activeCell.row,ci=activeCell.col;render();setTimeout(()=>{const inp=document.querySelector(`#tbody tr:nth-child(${ri+1}) td:nth-child(${ci+1}) input`);if(inp)inp.focus()},10)}
-function applyBorder(style){if(!activeCell)return;const k=activeCell.row+"_"+activeCell.col;cellStyles[k]=cellStyles[k]||{};cellStyles[k].border=style==="none"?null:style;dirty=true;document.getElementById("border-style").value="";const ri=activeCell.row,ci=activeCell.col;render();setTimeout(()=>{const inp=document.querySelector(`#tbody tr:nth-child(${ri+1}) td:nth-child(${ci+1}) input`);if(inp)inp.focus()},10)}
+function getRangeCells(){if(!activeCell)return[];const cells=[];if(selectionRange){for(let ri=selectionRange.r1;ri<=selectionRange.r2;ri++)for(let ci=selectionRange.c1;ci<=selectionRange.c2;ci++)cells.push({row:ri,col:ci})}else{cells.push({row:activeCell.row,col:activeCell.col})}return cells}
+function formatCell(style){const cells=getRangeCells();if(!cells.length)return;cells.forEach(({row:ri,col:ci})=>{const k=ri+"_"+ci;cellStyles[k]=cellStyles[k]||{};cellStyles[k][style]=!cellStyles[k][style]});dirty=true;document.getElementById("save-status").textContent="📝 Editando...";render()}
+function applyCellColor(type,val){const cells=getRangeCells();if(!cells.length)return;cells.forEach(({row:ri,col:ci})=>{const k=ri+"_"+ci;cellStyles[k]=cellStyles[k]||{};cellStyles[k][type]=val});dirty=true;render()}function applyBorder(style){const cells=getRangeCells();if(!cells.length)return;cells.forEach(({row:ri,col:ci})=>{const k=ri+"_"+ci;cellStyles[k]=cellStyles[k]||{};cellStyles[k].border=style==="none"?null:style});dirty=true;document.getElementById("border-style").value="";render()}async function manualSave(){if(!dirty)return;await autoSave();document.getElementById("save-status").textContent="💾 Guardado"}
 function mergeSelected(){if(!activeCell)return;if(!mergeStart){mergeStart={...activeCell};document.getElementById("merge-status").style.display="inline";render();return}const r1=Math.min(activeCell.row,mergeStart.row),r2=Math.max(activeCell.row,mergeStart.row),c1=Math.min(activeCell.col,mergeStart.col),c2=Math.max(activeCell.col,mergeStart.col);if(r1===r2&&c1===c2){mergeStart=null;document.getElementById("merge-status").style.display="none";render();return}cellStyles["_merges"]=cellStyles["_merges"]||[];cellStyles["_merges"].push({r1,c1,r2,c2});for(let ri=r1;ri<=r2;ri++)for(let ci=c1;ci<=c2;ci++){if(ri===r1&&ci===c1)continue;cellStyles[ri+"_"+ci]=cellStyles[ri+"_"+ci]||{};cellStyles[ri+"_"+ci].merge=true}mergeStart=null;document.getElementById("merge-status").style.display="none";dirty=true;clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);render()}function unmergeCell(){if(!activeCell)return;cellStyles["_merges"]=(cellStyles["_merges"]||[]).filter(m=>!(m.r1<=activeCell.row&&m.r2>=activeCell.row&&m.c1<=activeCell.col&&m.c2>=activeCell.col));for(let ri=0;ri<rows.length;ri++)for(let ci=0;ci<headers.length;ci++)if(cellStyles[ri+"_"+ci])delete cellStyles[ri+"_"+ci].merge;mergeStart=null;document.getElementById("merge-status").style.display="none";dirty=true;clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);render()}
 
 // /img picker
@@ -128,7 +136,7 @@ async function showImgPicker(inp){
 function previewImg(id){const pv=document.getElementById("img-preview"),el=document.getElementById("img-picker"),prect=el.getBoundingClientRect();pv.style.left=(prect.right+8)+"px";pv.style.top=prect.top+"px";pv.style.display="block";pv.innerHTML=`<img src="/api/projects/${projectId}/files/${id}/view" onerror="this.parentElement.style.display='none'" alt="Preview"><div style="font-size:11px;text-align:center;margin-top:4px;color:#6B7280">Preview</div>`}
 
 function hideImgPreview(){document.getElementById("img-preview").style.display="none";document.getElementById("img-preview").innerHTML=""}
-function insertImg(id,name){document.getElementById("img-picker").style.display="none";hideImgPreview();const inp=document.querySelector(`#tbody tr:nth-child(${activeCell.row+1}) td:nth-child(${activeCell.col+1}) input`);if(inp){inp.value=inp.value.replace(/\/img.*$/,"")+`[img: ${name}]`;rows[activeCell.row]["col"+activeCell.col]=inp.value;dirty=true;inp.focus()}}
+function insertImg(id,name){document.getElementById("img-picker").style.display="none";hideImgPreview();const inp=document.querySelector(`#tbody tr:nth-child(${activeCell.row+1}) td:nth-child(${activeCell.col+1}) input`);if(inp){inp.value=inp.value.replace(/\/img.*$/,"")+`[img: ${name}]`;rows[activeCell.row]["col"+activeCell.col]=inp.value;dirty=true;inp.focus();clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000)}}
 
 document.addEventListener("click",e=>{if(!e.target.closest("#img-picker")&&!e.target.closest("td input")){document.getElementById("img-picker").style.display="none";hideImgPreview()}})
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){mergeStart=null;document.getElementById("merge-status").style.display="none";document.getElementById("img-picker").style.display="none";hideImgPreview();render()}})

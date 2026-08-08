@@ -178,7 +178,7 @@ app.post("/api/projects/:id/files", fileUpload.array("files", 20), async (req, r
         name: file.originalname, mimetype: file.mimetype, size: file.size,
       }).select().single();
       const storagePath = `${req.params.id}/${data.id}`;
-      const { error: uploadErr } = await sb.storage.from("lubia-files").upload(storagePath, file.buffer, { contentType: file.mimetype, upsert: true });
+      const { error: uploadErr } = await sb.storage.from("lubia-files").upload(storagePath, file.buffer, { contentType: file.mimetype, upsert: true, cacheControl: "0" });
       if (uploadErr) {
         await sb.from("files").delete().eq("id", data.id);
         console.error("[Upload] Error Storage:", uploadErr);
@@ -734,7 +734,7 @@ app.put("/api/projects/:id/files/:fileId/edit", async (req, res) => {
 
     const outBuf = await workbook.xlsx.writeBuffer();
     const storagePath = `${file.project_id}/${file.id}`;
-    await sb.storage.from("lubia-files").upload(storagePath, outBuf, { contentType: file.mimetype, upsert: true });
+    await sb.storage.from("lubia-files").upload(storagePath, outBuf, { contentType: file.mimetype, upsert: true, cacheControl: "0" });
     await sb.from("files").update({ size: outBuf.length }).eq("id", req.params.fileId);
     res.json({ ok: true, size: outBuf.length });
   } catch (err) { res.status(500).json({ error: err.message }); }

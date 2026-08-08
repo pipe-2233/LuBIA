@@ -649,17 +649,70 @@ app.put("/api/projects/:id/files/:fileId/edit", async (req, res) => {
     const { data: file } = await sb.from("files").select("*").eq("id", req.params.fileId).single();
     if (!file) return res.status(404).json({ error: "No encontrado" });
 
-    const { headers, rows: dataRows } = req.body;
-    const newWb = XLSX.utils.book_new();
-    const rows = [headers];
-    for (const r of dataRows) {
-      const row = headers.map((_, j) => r[`col${j}`] || "");
-      rows.push(row);
-    }
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    XLSX.utils.book_append_sheet(newWb, ws, "Hoja1");
-    const outBuf = XLSX.write(newWb, { type: "buffer", bookType: "xlsx" });
+    const { headers, rows: dataRows, cellStyles } = req.body;
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Hoja1");
 
+    // Headers con estilo INGELUBSA
+    const headerRow = sheet.getRow(1);
+    headers.forEach((h, j) => {
+      const cell = headerRow.getCell(j + 1);
+      cell.value = h;
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEAB308" } };
+      cell.font = { bold: true, color: { argb: "FF111827" }, size: 12 };
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+      cell.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+    });
+
+    // Filas de datos con estilos
+    for (let i = 0; i < dataRows.length; i++) {
+      const row = sheet.getRow(i + 2);
+      for (let j = 0; j < headers.length; j++) {
+        const cell = row.getCell(j + 1);
+        cell.value = (dataRows[i][`col${j}`] || "").replace(/\[img:.*?\]/, "").trim();
+        const style = (cellStyles || {})[`${i}_${j}`] || {};
+        if (style.bg && style.bg !== "#ffffff") cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + style.bg.replace("#", "") } };
+        if (style.color && style.color !== "#000000") cell.font = { ...cell.font, color: { argb: "FF" + style.color.replace("#", "") } };
+        if (style.bold) cell.font = { ...cell.font, bold: true };
+        if (style.italic) cell.font = { ...cell.font, italic: true };
+        const bd = style.border === "thick" ? "medium" : style.border === "thin" ? "thin" : style.border === "double" ? "double" : undefined;
+        if (bd) cell.border = { top: { style: bd }, bottom: { style: bd }, left: { style: bd }, right: { style: bd } };
+        else cell.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+        cell.alignment = { vertical: "middle", wrapText: true };
+        cell.font = { ...cell.font, size: 12 };
+      }
+    }
+
+    // Merged cells
+    const merges = (cellStyles || {})["_merges"] || [];
+    for (const m of merges) sheet.mergeCells(Number(m.r1) + 2, Number(m.c1) + 1, Number(m.r2) + 2, Number(m.c2) + 1);
+
+    // Embed imágenes
+    for (let i = 0; i < dataRows.length; i++) {
+      for (let j = 0; j < headers.length; j++) {
+        const val = dataRows[i][`col${j}`] || "";
+        const match = val.match(/\[img:\s*(.+?)\]/);
+        if (match) {
+          try {
+            const { data: imgFiles } = await sb.from("files").select("*").eq("project_id", file.project_id).ilike("name", `%${match[1].trim()}%`).ilike("mimetype", "image/%");
+            if (imgFiles && imgFiles.length > 0) {
+              const imgFile = imgFiles[0];
+              const { data: imgData } = await sb.storage.from("lubia-files").download(`${imgFile.project_id}/${imgFile.id}`);
+              if (imgData) {
+                const imgId = workbook.addImage({ buffer: Buffer.from(await imgData.arrayBuffer()), extension: imgFile.mimetype.split("/")[1] || "jpeg" });
+                sheet.addImage(imgId, { tl: { col: j, row: i + 1 }, ext: { width: 100, height: 80 } });
+                sheet.getRow(i + 2).height = 90;
+              }
+            }
+          } catch {}
+        }
+      }
+    }
+
+    // Column widths
+    headers.forEach((_, j) => { sheet.getColumn(j + 1).width = Math.max(15, (headers[j] || "").length * 2 + 5); });
+
+    const outBuf = await workbook.xlsx.writeBuffer();
     const storagePath = `${file.project_id}/${file.id}`;
     await sb.storage.from("lubia-files").upload(storagePath, outBuf, { contentType: file.mimetype, upsert: true });
     await sb.from("files").update({ size: outBuf.length }).eq("id", req.params.fileId);

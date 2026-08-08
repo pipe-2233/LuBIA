@@ -44,10 +44,19 @@
   <button onclick="formatCell('bold')"><b>B</b></button>
   <button onclick="formatCell('italic')"><i>I</i></button>
   <span class="sep"></span>
+  <span style="font-size:12px;color:#374151">🎨</span><input type="color" id="bg-color" value="#ffffff" onchange="applyCellColor('bg',this.value)" title="Color de fondo" style="width:28px;height:24px;border:none;cursor:pointer;padding:0">
+  <span style="font-size:12px;color:#374151">🖊</span><input type="color" id="text-color" value="#000000" onchange="applyCellColor('color',this.value)" title="Color de texto" style="width:28px;height:24px;border:none;cursor:pointer;padding:0">
+  <span class="sep"></span>
+  <select id="border-style" onchange="applyBorder(this.value)" style="padding:4px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px">
+    <option value="">Bordes</option><option value="thin">Fino</option><option value="thick">Grueso</option><option value="double">Doble</option><option value="none">Sin borde</option>
+  </select>
+  <button onclick="mergeSelected()" title="Combinar celdas">⬜</button>
+  <button onclick="unmergeSelected()" title="Separar celdas">▦</button>
+  <span class="sep"></span>
   <button onclick="addRow()">+ Fila</button>
   <button onclick="deleteRow()">− Fila</button>
   <span class="sep"></span>
-  <span style="font-size:12px;color:#6B7280">💡 <code>/img</code> para insertar imagen</span>
+  <span style="font-size:12px;color:#6B7280">💡 <code>/img</code> para imagen</span>
 </div>
 
 <div class="table-wrap"><table class="editable-table" id="table"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
@@ -57,13 +66,13 @@
 
 <div class="footer-bar">
   <span>LUBIA · INGELUBSA S.A.S.</span>
-  <span id="cell-info">Fila: — Col: —</span>
+  <span><a id="download-link" href="#" target="_blank" style="color:#EAB308;text-decoration:none">⬇ Descargar Excel</a> | <span id="cell-info">Fila: — Col: —</span></span>
 </div>
 
 <script>
 const params=new URLSearchParams(location.search);
 const fileId=params.get("id"),projectId=params.get("project");
-let headers=[],rows=[],activeCell=null,saveTimeout=null,dirty=false,imgFiles=[],imgIdx=0;
+let headers=[],rows=[],activeCell=null,saveTimeout=null,dirty=false,imgFiles=[],imgIdx=0,cellStyles={},mergeStart=null;
 
 function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
 
@@ -75,6 +84,7 @@ async function init(){
     if(d.error){document.getElementById("filename").textContent=d.error;return}
     document.getElementById("filename").textContent=d.filename||"Sin nombre";
     document.title="Editor - "+esc(d.filename||"Excel");
+    document.getElementById("download-link").href=`/api/projects/${projectId}/files/${fileId}/view`;
     headers=d.headers||[];rows=d.rows||[];
     if(headers.length===0){headers=["A","B","C"];rows=[]}
     render();
@@ -83,7 +93,7 @@ async function init(){
 
 function render(){
   document.getElementById("thead").innerHTML="<tr>"+headers.map(h=>"<th>"+esc(h)+"</th>").join("")+"</tr>";
-  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>`<tr>${headers.map((_,j)=>`<td><input value="${esc(r["col"+j]||"")}" onfocus="focusCell(${ri},${j})" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}"></td>`).join("")}</tr>`).join("");
+  document.getElementById("tbody").innerHTML=rows.map((r,ri)=>`<tr>${headers.map((_,j)=>{const s=cellStyles[ri+"_"+j]||{};const bg=s.bg||"";const fc=s.color||"";const bw=s.bold?"bold":"normal";const fs=s.italic?"italic":"normal";return`<td><input value="${esc(r["col"+j]||"")}" onfocus="focusCell(${ri},${j})" oninput="cellChange(this,${ri},${j})" onkeydown="cellKey(event,${ri},${j})" data-row="${ri}" data-col="${j}" style="background:${bg};color:${fc};font-weight:${bw};font-style:${fs}${s.border?'border:2px solid #374151':''}"></td>`}).join("")}</tr>`).join("");
 }
 
 function focusCell(ri,j){activeCell={row:ri,col:j};document.getElementById("cell-info").textContent=`Fila: ${ri+1} Col: ${String.fromCharCode(65+j)}`}
@@ -94,12 +104,15 @@ function cellKey(e,ri,j){
 }
 
 async function autoSave(){
-  try{await fetch(`/api/projects/${projectId}/files/${fileId}/edit`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({headers,rows})});dirty=false;document.getElementById("save-status").textContent="💾 Guardado";setTimeout(()=>{if(!dirty)document.getElementById("save-status").textContent="📝 Sin cambios"},2000)}catch(e){document.getElementById("save-status").textContent="❌ Error al guardar"}
+  try{await fetch(`/api/projects/${projectId}/files/${fileId}/edit`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({headers,rows,cellStyles})});dirty=false;document.getElementById("save-status").textContent="💾 Guardado";setTimeout(()=>{if(!dirty)document.getElementById("save-status").textContent="📝 Sin cambios"},2000)}catch(e){document.getElementById("save-status").textContent="❌ Error al guardar"}
 }
 
 function addRow(){const r={};headers.forEach((_,j)=>r["col"+j]="");rows.push(r);render()}
 function deleteRow(){if(!activeCell)return;rows.splice(activeCell.row,1);dirty=true;document.getElementById("save-status").textContent="📝 Fila eliminada";render()}
-function formatCell(style){if(!activeCell)return;const v=rows[activeCell.row]["col"+activeCell.col];rows[activeCell.row]["col"+activeCell.col]=(style==="bold"?"**":"*")+v+(style==="bold"?"**":"*");dirty=true;render();const inp=document.querySelector(`#tbody tr:nth-child(${activeCell.row+1}) td:nth-child(${activeCell.col+1}) input`);if(inp)inp.focus()}
+function formatCell(style){if(!activeCell)return;const k=activeCell.row+"_"+activeCell.col;cellStyles[k]=cellStyles[k]||{};cellStyles[k][style]=!cellStyles[k][style];dirty=true;document.getElementById("save-status").textContent="📝 Editando...";render();const inp=document.querySelector(`#tbody tr:nth-child(${activeCell.row+1}) td:nth-child(${activeCell.col+1}) input`);if(inp)inp.focus()}
+function applyCellColor(type,val){if(!activeCell)return;const k=activeCell.row+"_"+activeCell.col;cellStyles[k]=cellStyles[k]||{};cellStyles[k][type]=val;dirty=true;render();const inp=document.querySelector(`#tbody tr:nth-child(${activeCell.row+1}) td:nth-child(${activeCell.col+1}) input`);if(inp)inp.focus()}
+function applyBorder(style){if(!activeCell)return;const k=activeCell.row+"_"+activeCell.col;cellStyles[k]=cellStyles[k]||{};cellStyles[k].border=style==="none"?null:style;dirty=true;document.getElementById("border-style").value="";render()}
+function mergeSelected(){if(!activeCell||!mergeStart){mergeStart={...activeCell};render();return}const r1=Math.min(activeCell.row,mergeStart.row),r2=Math.max(activeCell.row,mergeStart.row),c1=Math.min(activeCell.col,mergeStart.col),c2=Math.max(activeCell.col,mergeStart.col);if(r1===r2&&c1===c2){mergeStart=null;render();return}cellStyles["_merges"]=cellStyles["_merges"]||[];cellStyles["_merges"].push({r1,c1,r2,c2});mergeStart=null;dirty=true;clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000)}function unmergeSelected(){if(!activeCell)return;const k=activeCell.row+"_"+activeCell.col;cellStyles["_merges"]=(cellStyles["_merges"]||[]).filter(m=>!(m.r1<=activeCell.row&&m.r2>=activeCell.row&&m.c1<=activeCell.col&&m.c2>=activeCell.col));mergeStart=null;dirty=true;clearTimeout(saveTimeout);saveTimeout=setTimeout(autoSave,3000);render()}
 
 // /img picker
 async function showImgPicker(inp){

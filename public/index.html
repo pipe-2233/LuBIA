@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LUBIA | INGELUBSA S.A.S.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,300,0,0&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#111827; --ink-2:#1F2937; --amber:#EAB308; --amber-2:#FACC15;
+      --amber-soft:#FEF3C7; --amber-hover:#FEF9C3; --amber-text:#854D0E; --amber-deep:#A16207;
+      --bg:#F8FAFC; --surface:#fff; --line:#E5E7EB; --line-2:#EDF0F4; --line-3:#F4F6F8;
+      --muted:#6B7280; --faint:#9CA3AF; --hair:#E9EDF2;
+      --row:40px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:Manrope,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+    a{color:var(--amber-deep);text-decoration:none}
+    a:hover{color:var(--amber)}
+    input,button,textarea,select{font-family:inherit}
+    .ms{font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;font-variation-settings:'wght' 300;font-size:18px}
+    ::-webkit-scrollbar{width:10px;height:10px}
+    ::-webkit-scrollbar-thumb{background:#D8DEE7;border:3px solid var(--bg);border-radius:8px}
+    ::-webkit-scrollbar-track{background:transparent}
+
+    /* ── Shell full-bleed ─────────────────── */
+    #app-wrapper{display:flex;height:100vh;overflow:hidden}
+    .rail{width:68px;flex:none;background:var(--ink);display:flex;flex-direction:column;align-items:center;padding:14px 0 10px;gap:4px}
+    .rail-logo{width:40px;height:40px;border-radius:11px;background:var(--amber);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:var(--ink);letter-spacing:-.5px;margin-bottom:14px}
+    .rail-spacer{flex:1}
+    .rail .nav-link{width:48px;height:48px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--faint);transition:background .15s,color .15s}
+    .rail .nav-link small{font-size:8.5px;font-weight:600;letter-spacing:.02em}
+    .rail .nav-link .ms{font-size:21px}
+    .rail .nav-link:hover{background:rgba(255,255,255,.09);color:#fff}
+    .rail .nav-link.active{background:rgba(234,179,8,.16);color:var(--amber)}
+    .gear-btn{width:48px;height:48px;border:none;background:none;border-radius:12px;color:var(--faint);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .gear-btn:hover{background:rgba(255,255,255,.09);color:var(--amber)}
+    .gear-btn .ms{font-size:21px}
+    .rail-avatar{width:34px;height:34px;border-radius:50%;background:var(--ink-2);border:1px solid #374151;color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:6px}
+
+    .app-body{flex:1;min-width:0;display:flex;flex-direction:column}
+    .main-content{flex:1;min-height:0;display:flex;flex-direction:column}
+    #view-proyectos,#view-correos,#view-home,#view-project{flex:1;min-height:0;display:flex;flex-direction:column}
+    /* el JS alterna display:block/none — mantenemos el flex column sin tocar la lógica */
+    #view-proyectos:not([style*="none"]),#view-correos:not([style*="none"]),
+    #view-home:not([style*="none"]),#view-project:not([style*="none"]){display:flex!important}
+    .footer{flex:none;height:26px;background:var(--ink);color:var(--faint);display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.02em}
+    .footer strong{color:var(--amber);font-weight:700}
+
+    /* ── Cabecera de vista ────────────────── */
+    .view-head{flex:none;min-height:56px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:9px 18px;flex-wrap:wrap}
+    .view-head h1{font-size:17px;font-weight:800;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+    .view-head h1 span{color:var(--amber-deep)}
+    .view-head .spacer{flex:1;min-width:6px}
+    .view-body{flex:1;min-height:0;overflow:auto;padding:22px 24px}
+
+    /* ── Botones ──────────────────────────── */
+    .btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;flex:none;transition:all .15s}
+    .btn .ms{font-size:18px}
+    .btn-primary{background:var(--amber);color:var(--ink)}
+    .btn-primary:hover{background:var(--amber-2)}
+    .btn-outline{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+    .btn-outline:hover{border-color:var(--amber);background:#FEFCE8}
+    .btn-ghost{background:none;color:var(--muted)}
+    .btn-ghost:hover{background:#F1F3F6;color:var(--ink)}
+    .btn-green{background:#22C55E;color:#fff}
+    .btn-green:hover{background:#16A34A}
+    .btn-red{background:#EF4444;color:#fff}
+    .btn-red:hover{background:#DC2626}
+    .btn-sm{height:32px;padding:0 12px;font-size:12.5px}
+    .btn-xs{height:26px;padding:0 9px;font-size:11.5px;border-radius:7px}
+    .btn-xs .ms{font-size:15px}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .btn-dashed{background:none;border:1px dashed #D8DEE7;color:var(--muted)}
+    .btn-dashed:hover{border-color:var(--amber);color:var(--ink);background:#FEFCE8}
+
+    /* ── Proyectos (cards) ────────────────── */
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:14px}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,box-shadow .15s}
+    .card:hover{border-color:var(--amber);box-shadow:0 8px 24px rgba(234,179,8,.14)}
+    .card-icon{width:36px;height:36px;border-radius:11px;background:var(--ink);color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:18px}
+    .card h3{font-size:14px;font-weight:800}
+    .card-meta{font-size:11.5px;color:var(--faint);font-weight:600}
+    .card-footer{margin-top:2px;padding-top:10px;border-top:1px solid var(--line-3)}
+    .card-link{color:var(--amber-deep);font-weight:700;font-size:12.5px}
+    .empty{max-width:420px;margin:56px auto;text-align:center;background:var(--surface);border:1px dashed #D8DEE7;border-radius:16px;padding:38px 26px}
+    .empty-icon{font-size:34px;margin-bottom:12px;opacity:.5}
+    .empty h2{font-size:16px;margin-bottom:6px}
+    .empty p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.55}
+
+    /* ── Workspace ────────────────────────── */
+    .ws{flex:1;min-height:0;display:grid;grid-template-columns:288px minmax(0,1fr) 380px;gap:1px;background:var(--hair)}
+    .ws-side{background:var(--surface);display:flex;flex-direction:column;min-height:0;min-width:0;padding:12px 12px 14px;gap:14px;overflow:hidden}
+    .ws-main{background:var(--surface);display:flex;flex-direction:column;min-height:0;min-width:0;position:relative;overflow:hidden}
+    .ws-detail{background:var(--surface);display:flex;flex-direction:column;min-height:0;min-width:0;overflow:auto;padding:16px}
+    .panel-head{display:flex;align-items:center;gap:6px;padding:0 4px;flex:none}
+    .panel-head .label{font-size:10.5px;font-weight:700;letter-spacing:.09em;color:var(--faint);text-transform:uppercase}
+    .panel-head .spacer{flex:1}
+    .panel-scroll{flex:1;min-height:0;overflow:hidden auto;margin-top:6px}
+    .panel-actions{display:flex;gap:6px;margin-top:8px;flex:none}
+    .panel-actions .btn{flex:1;justify-content:center}
+    .ws-side .block{display:flex;flex-direction:column;min-height:0}
+    .ws-side .block.templates{flex:none;max-height:44%;border-top:1px solid var(--line-2);padding-top:12px}
+
+    /* Tabla de archivos */
+    .tbl-head{flex:none;height:34px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--line-2);background:#FBFCFD;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+    .tbl-head input[type=checkbox]{width:16px;height:16px;cursor:pointer;margin-right:14px;accent-color:var(--amber)}
+    #file-table{flex:1;min-height:0;overflow:auto}
+    .folder-children{display:block}
+
+    /* tree-item genérico (lo genera el JS) */
+    .tree-item{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;transition:background .1s}
+    .tree-item .icon{font-size:15px;width:19px;text-align:center;flex:none}
+    .tree-item .name{flex:1;min-width:0;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tree-item .meta{color:var(--faint);font-size:11px;margin-left:auto;flex:none}
+    .tree-item input[type=checkbox]{accent-color:var(--amber);flex:none}
+    #file-table .tree-item{height:var(--row);padding:0 16px;border-bottom:1px solid var(--line-3)}
+    #file-table .tree-item>span[style]{flex:none;white-space:nowrap;overflow:hidden}
+    #file-table .tree-item:hover{background:var(--amber-hover)}
+    #file-table .tree-item.selected{background:var(--amber-soft);font-weight:600;box-shadow:inset 3px 0 0 0 var(--amber)}
+    #file-table .tree-item .btn-xs{opacity:.55}
+    #file-table .tree-item:hover .btn-xs{opacity:1}
+    #sede-list .tree-item,#template-list .tree-item,#correos-tree .tree-item{height:38px;padding:0 10px;border-radius:10px;margin-bottom:2px}
+    #sede-list .tree-item:hover,#template-list .tree-item:hover,#correos-tree .tree-item:hover{background:var(--amber-hover)}
+    #sede-list .tree-item.selected,#correos-tree .tree-item.selected{background:var(--amber-soft);font-weight:700;box-shadow:inset 3px 0 0 0 var(--amber)}
+    #sede-list .tree-item.selected::after{content:'close';font-family:'Material Symbols Outlined';font-size:16px;color:var(--amber-deep);opacity:.7}
+    #template-list .tree-item{height:34px}
+    .folder-drop.drag-over{background:var(--amber-soft)!important;box-shadow:inset 0 0 0 2px var(--amber)}
+    .tree-item.dragging{opacity:.45}
+    #file-table.drag-over{background:#FEFCE8}
+
+    /* Barra de selección múltiple */
+    #bulk-bar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:none;align-items:center;gap:6px;height:44px;padding:0 8px 0 16px;border-radius:14px;background:var(--ink);box-shadow:0 12px 32px rgba(17,24,39,.28);z-index:5}
+    #bulk-count{font-size:12.5px;font-weight:700;color:var(--amber);white-space:nowrap}
+    #bulk-bar .btn{background:none;color:#E5E7EB;border:none;height:30px}
+    #bulk-bar .btn:hover{background:rgba(255,255,255,.1);color:#fff}
+    #bulk-bar .btn-red{color:#FCA5A5;background:none}
+    #bulk-bar .btn-red:hover{background:rgba(239,68,68,.2);color:#fff}
+    #bulk-bar .sep{width:1px;height:20px;background:rgba(255,255,255,.14);margin:0 4px}
+    #bulk-bar kbd{font-size:9.5px;border:1px solid rgba(255,255,255,.25);border-radius:4px;padding:1px 4px;font-family:inherit}
+
+    /* Detalle */
+    .ws-detail>p{color:var(--faint);text-align:center;padding:40px 10px;font-size:12.5px;line-height:1.55}
+    .placeholder-box{border-radius:12px;border:1px solid var(--line-2);background:repeating-linear-gradient(135deg,#F8FAFC 0 9px,#F1F4F8 9px 18px);height:140px;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--faint)}
+
+    /* ── Correos ──────────────────────────── */
+    .correos-grid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:1px;background:var(--hair)}
+    #correos-tree{background:var(--surface);overflow:auto;padding:10px;min-height:0}
+    #correos-preview{background:var(--surface);overflow:auto;padding:20px 24px;min-height:0}
+    #correos-preview>p{color:var(--faint);text-align:center;padding:50px 0;font-size:13px}
+    .correos-meta{font-size:12.5px;color:var(--muted);margin-bottom:4px}
+    .correos-meta strong{color:var(--ink);min-width:58px;display:inline-block}
+    .search{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);flex:1;max-width:420px;min-width:180px}
+    .search .ms{font-size:18px;color:var(--faint)}
+    .search input{flex:1;min-width:0;border:none;background:none;outline:none;font-size:13px}
+
+    /* ── Chat lateral (empuja el contenido) ─ */
+    #chat-panel{width:340px;flex:none;background:var(--surface);border-left:1px solid var(--line);flex-direction:column;min-height:0}
+    #chat-panel .chat-head{flex:none;height:48px;display:flex;align-items:center;gap:9px;padding:0 14px;border-bottom:1px solid var(--line-2)}
+    #chat-panel .chat-head h3{font-size:13px;font-weight:800;flex:1}
+    .chat-badge{width:26px;height:26px;border-radius:8px;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--ink)}
+    .chat-messages{flex:1;min-height:0;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+    .chat-msg{max-width:88%;padding:10px 12px;border-radius:13px;font-size:12.5px;line-height:1.55;white-space:pre-wrap}
+    .chat-msg.user{align-self:flex-end;background:var(--amber);color:var(--ink);border-bottom-right-radius:5px}
+    .chat-msg.assistant{align-self:flex-start;background:var(--bg);border:1px solid var(--line-2);border-bottom-left-radius:5px}
+    .chat-msg .attach{display:inline-flex;flex-wrap:wrap;gap:4px;background:rgba(0,0,0,.07);border-radius:6px;padding:2px 7px;margin-top:6px;font-size:11.5px}
+    .chat-input-wrap{flex:none;border-top:1px solid var(--line-2);padding:11px 12px;position:relative}
+    .chat-attachments{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+    .chat-chip{display:inline-flex;align-items:center;gap:4px;background:var(--amber-soft);border:1px solid #FDE68A;color:var(--amber-text);border-radius:20px;padding:3px 10px;font-size:11.5px;white-space:nowrap}
+    .chat-chip .remove{cursor:pointer;color:#EF4444;font-weight:800}
+    .chat-row{display:flex;align-items:center;gap:7px;height:38px;padding:0 5px 0 13px;border:1px solid var(--line);border-radius:20px;background:var(--bg)}
+    .chat-row input{flex:1;min-width:0;border:none;background:none;outline:none;font-size:12.5px}
+    .chat-row button{width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--amber);color:var(--ink);font-size:13px;cursor:pointer}
+    .at-picker{position:absolute;bottom:100%;left:12px;right:12px;max-height:220px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 -6px 20px rgba(17,24,39,.12);margin-bottom:6px;display:none;z-index:50}
+    .at-item{padding:8px 12px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:8px}
+    .at-item:hover,.at-item.sel{background:var(--amber-soft)}
+
+    /* ── Modales / formularios ────────────── */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:300;justify-content:center;align-items:center;padding:24px}
+    .modal-overlay.active{display:flex}
+    .modal{background:var(--surface);border-radius:16px;padding:24px;max-width:640px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 24px 60px rgba(17,24,39,.3)}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+    .modal-header h2{font-size:17px;font-weight:800}
+    .modal-close{background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted)}
+    .modal-close:hover{color:#EF4444}
+    .form-group{margin-bottom:14px}
+    .form-group label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px}
+    .form-group input,.form-group textarea,.form-group select{width:100%;height:38px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:13px;background:var(--bg);outline:none}
+    .form-group textarea{height:auto;min-height:90px;padding:10px 12px;resize:vertical;line-height:1.5}
+    .form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--amber);background:#fff}
+    .settings-row{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+    .settings-row label{font-size:12.5px;font-weight:700;min-width:130px;color:#374151}
+    .settings-row input{flex:1;height:36px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:13px;background:var(--bg);outline:none}
+    .settings-row input:focus{border-color:var(--amber);background:#fff}
+
+    /* ── Banners / spinner / tablas ───────── */
+    .banner{padding:10px 14px;border-radius:10px;margin:12px 0;font-size:13px;display:none}
+    .banner.processing{background:#FEF9C3;color:#92400E;display:block}
+    .banner.success{background:#DCFCE7;color:#166534;display:block}
+    .banner.error{background:#FEF2F2;color:#991B1B;display:block}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:7px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .transcript-box{background:var(--bg);border:1px solid var(--line-2);border-radius:10px;padding:14px;margin:12px 0;font-size:12.5px;line-height:1.6;max-height:210px;overflow:auto;white-space:pre-wrap}
+    .extract-card{background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:14px;margin:12px 0}
+    .extract-card h4{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-bottom:10px}
+    .extract-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line-3);font-size:13px}
+    .extract-label{color:var(--muted);min-width:130px}
+    .extract-value{font-weight:600}
+    .missing-list{margin:10px 0;padding:12px;background:#FEF2F2;border-radius:10px;border-left:3px solid #EF4444}
+    .missing-list h4{color:#DC2626;margin-bottom:6px;font-size:12.5px}
+    .missing-list li{color:#991B1B;font-size:12.5px;margin-left:18px;margin-bottom:3px}
+    .comp-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
+    .comp-table th{background:var(--ink);color:var(--amber);padding:8px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+    .comp-table td{padding:0;border-bottom:1px solid var(--line-3)}
+    .comp-table input{width:100%;height:32px;padding:0 9px;border:none;background:none;font-size:12.5px;outline:none}
+    .comp-table input:focus{background:#FEF9C3;box-shadow:inset 0 0 0 2px var(--amber)}
+    .comp-table tr:nth-child(even) td{background:#FBFCFD}
+    .editor-toolbar{display:flex;gap:6px;padding:8px 0;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line-2);margin-bottom:10px}
+    .editor-toolbar button{height:28px;padding:0 10px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:700}
+    .editor-toolbar button:hover{border-color:var(--amber);background:#FEFCE8}
+    .editable-table-wrap{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+    .editable-table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12.5px}
+    .editable-table th{background:var(--ink);color:var(--amber);padding:8px 12px;text-align:left;font-weight:700;white-space:nowrap;position:sticky;top:0;z-index:1;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}
+    .editable-table td{padding:0;border:1px solid var(--line-2);min-width:120px}
+    .editable-table td input{width:100%;height:32px;padding:0 10px;border:none;font-size:12.5px;background:#fff;outline:none}
+    .editable-table td input:focus{background:#FEF9C3;box-shadow:inset 0 0 0 2px var(--amber)}
+    .editable-table tr:nth-child(even) td input{background:#FBFCFD}
+    .editor-tabs{display:flex;gap:6px;margin-bottom:10px}
+    .editor-tab{height:28px;padding:0 10px;border:none;background:none;color:var(--muted);font-size:12.5px;font-weight:700;cursor:pointer;border-radius:8px}
+    .editor-tab:hover{background:#F1F3F6}
+    .editor-tab.active{background:var(--amber-soft);color:var(--amber-text)}
+    .img-picker{position:absolute;z-index:60;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 20px rgba(17,24,39,.14);max-height:200px;overflow:auto;min-width:220px;display:none}
+    .img-picker.show{display:block}
+    .img-picker .item{padding:6px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px}
+    .img-picker .item:hover{background:var(--amber-soft)}
+    .img-preview-large{position:absolute;right:-262px;top:0;width:250px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 20px rgba(17,24,39,.14);padding:8px;display:none;z-index:61}
+    .img-preview-large img{width:100%;border-radius:6px}
+
+    /* ── Responsive: tablet ───────────────── */
+    @media (max-width:1240px){
+      .ws{grid-template-columns:252px minmax(0,1fr) 320px}
+      #file-table .tree-item span[style*="width:80px"]{display:none}
+    }
+    @media (max-width:1080px){
+      .ws{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(280px,1fr) minmax(220px,auto);overflow:auto}
+      .ws-side{flex-direction:row;overflow:auto hidden;padding:10px 14px;gap:16px}
+      .ws-side .block{flex:1 0 260px;min-width:240px}
+      .ws-side .block.templates{max-height:none;border-top:none;border-left:1px solid var(--line-2);padding-top:0;padding-left:16px}
+      #chat-panel{position:fixed;top:0;right:0;height:100vh;z-index:200;box-shadow:-6px 0 24px rgba(17,24,39,.14)}
+      #file-table .tree-item span[style*="width:100px"]{display:none}
+    }
+  </style>
+</head>
+<body>
+<div id="app-wrapper">
+
+  <!-- ── Rail de navegación ─────────────────────────── -->
+  <aside class="rail">
+    <div class="rail-logo" title="LUBIA · INGELUBSA S.A.S.">LU</div>
+    <span class="nav-link active" data-nav="proyectos" onclick="showSection('proyectos')" title="Proyectos"><span class="ms">folder_open</span><small>Proy</small></span>
+    <span class="nav-link" data-nav="correos" onclick="showSection('correos')" title="Archivo de correos"><span class="ms">mail</span><small>Mail</small></span>
+    <div class="rail-spacer"></div>
+    <button class="gear-btn" onclick="toggleModal('modal-settings')" title="Configuración"><span class="ms">settings</span></button>
+    <div class="rail-avatar" title="INGELUBSA S.A.S.">IN</div>
+  </aside>
+
+  <div class="app-body">
+    <div class="main-content" id="app">
+
+      <!-- ══ SECCIÓN: Proyectos ══════════════════════ -->
+      <div id="view-proyectos">
+
+        <!-- HOME -->
+        <div id="view-home">
+          <div class="view-head">
+            <h1>Proyectos <span>LUBIA</span></h1>
+            <div class="spacer"></div>
+            <button class="btn btn-primary" onclick="toggleModal('modal-proyecto')"><span class="ms">add</span>Nuevo Proyecto</button>
+          </div>
+          <div class="view-body">
+            <div id="project-grid" class="grid"></div>
+            <div id="empty-state" class="empty" style="display:none">
+              <div class="empty-icon"><span class="ms" style="font-size:34px">folder_open</span></div>
+              <h2>Sin proyectos aún</h2>
+              <p>Creá tu primer proyecto para empezar a gestionar lubricación, SST, técnica y más con IA.</p>
+              <button class="btn btn-primary" onclick="toggleModal('modal-proyecto')"><span class="ms">add</span>Crear Proyecto</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROYECTO -->
+        <div id="view-project" style="display:none">
+          <div class="view-head">
+            <button class="btn btn-ghost btn-sm" onclick="goHome()"><span class="ms">arrow_back</span>Proyectos</button>
+            <h1 id="project-title"></h1>
+            <div class="spacer"></div>
+            <button class="btn btn-outline btn-sm" onclick="toggleChat()" title="Chat del proyecto"><span class="ms">forum</span>LUBIA IA</button>
+            <input type="file" id="file-upload-proj" multiple style="display:none" onchange="uploadMultiple(this.files)">
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('file-upload-proj').click()"><span class="ms">upload</span>Subir</button>
+          </div>
+
+          <div class="ws">
+            <!-- Sedes + plantillas -->
+            <div class="ws-side">
+              <div class="block">
+                <div class="panel-head">
+                  <span class="label">Sedes</span>
+                  <div class="spacer"></div>
+                  <button class="btn btn-dashed btn-xs" onclick="newSede()"><span class="ms">add</span>Sede</button>
+                </div>
+                <div id="sede-list" class="panel-scroll"><p style="font-size:12px;color:#9CA3AF;text-align:center;padding:18px 0">Cargando...</p></div>
+                <div class="panel-actions">
+                  <button class="btn btn-outline btn-xs" onclick="newFolderInSede()" id="btn-folder" disabled><span class="ms">create_new_folder</span>Carpeta</button>
+                </div>
+              </div>
+              <div class="block templates">
+                <div class="panel-head">
+                  <span class="label">Plantillas</span>
+                  <div class="spacer"></div>
+                  <button class="btn btn-dashed btn-xs" onclick="showTemplateModal()"><span class="ms">add</span>Nueva</button>
+                </div>
+                <div id="template-list" class="panel-scroll"><p style="font-size:12px;color:#9CA3AF;text-align:center;padding:12px 0">Cargando...</p></div>
+                <div class="panel-actions">
+                  <button class="btn btn-outline btn-xs" onclick="showImportModal()"><span class="ms">download</span>Importar plantilla</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Archivos -->
+            <div class="ws-main">
+              <div class="tbl-head">
+                <input type="checkbox" id="select-all" onchange="toggleSelectAll(this.checked)" title="Seleccionar todo">
+                <span style="flex:1;min-width:0">Nombre</span>
+                <span style="width:100px">Fecha</span>
+                <span style="width:80px">Tipo</span>
+                <span style="width:70px">Tamaño</span>
+                <span style="width:66px"></span>
+              </div>
+              <div id="file-table"><p style="padding:34px;color:#9CA3AF;text-align:center;font-size:13px">Seleccioná una sede para ver sus archivos</p></div>
+              <div id="bulk-bar">
+                <span id="bulk-count">0 seleccionados</span>
+                <span class="sep"></span>
+                <button class="btn btn-red btn-sm" onclick="bulkDelete()"><span class="ms">delete</span>Eliminar</button>
+                <span class="sep"></span>
+                <button class="btn btn-sm" onclick="clearSelection()">Limpiar <kbd>ESC</kbd></button>
+              </div>
+            </div>
+
+            <!-- Detalle -->
+            <div class="ws-detail" id="file-preview">
+              <p>Seleccioná un archivo para ver su detalle, editarlo o pasarlo por IA.</p>
+              <div id="preview-content" style="display:none"></div>
+              <div id="preview-transcribe" style="display:none;margin-top:10px">
+                <div id="banner" class="banner"></div>
+                <div id="transcript-box" class="transcript-box" style="display:none"></div>
+                <div id="extract-section" style="display:none">
+                  <div id="missing-alert" class="missing-list" style="display:none"></div>
+                  <div class="extract-card">
+                    <div class="form-group"><label>Activo</label><input id="fld-activo" placeholder="Nombre del equipo"></div>
+                    <h4>Componentes</h4>
+                    <table class="comp-table"><thead><tr><th>Componente</th><th>Cant.</th><th>Lubricante</th><th>Frecuencia</th><th>Ubicación</th></tr></thead><tbody id="comp-tbody"></tbody></table>
+                    <button class="btn btn-outline btn-xs" onclick="addComponentRow()"><span class="ms">add</span>Componente</button>
+                    <div class="form-group" style="margin-top:10px"><textarea id="fld-obs" placeholder="Observaciones..."></textarea></div>
+                  </div>
+                  <button class="btn btn-green btn-sm" onclick="generarExcel()"><span class="ms">download</span>Exportar a Excel</button>
+                </div>
+              </div>
+
+              <!-- Editor Excel /img -->
+              <div id="editor-panel" style="display:none">
+                <div class="editor-tabs">
+                  <button class="editor-tab active" onclick="switchEditorTab('view')">Ver</button>
+                  <button class="editor-tab" onclick="switchEditorTab('edit')">Editar</button>
+                  <button class="editor-tab" onclick="switchEditorTab('ai')">IA</button>
+                  <button class="editor-tab" onclick="switchEditorTab('audio')" id="editor-tab-audio" style="display:none">Audio</button>
+                </div>
+                <div id="editor-view" class="editor-content"></div>
+                <div id="editor-edit" class="editor-content" style="display:none">
+                  <div class="editor-toolbar">
+                    <button class="bold" onclick="formatCell('bold')" title="Negrita"><b>B</b></button>
+                    <button class="italic" onclick="formatCell('italic')" title="Cursiva"><i>I</i></button>
+                    <button onclick="addEditorRow()" title="Agregar fila">+ Fila</button>
+                    <button onclick="deleteEditorRow()" title="Eliminar fila">− Fila</button>
+                    <span style="margin-left:auto;color:#6B7280;font-size:11px">Escribí <code>/img</code> en una celda para insertar imagen</span>
+                  </div>
+                  <div class="editable-table-wrap"><table class="editable-table" id="editor-table"><thead id="editor-thead"></thead><tbody id="editor-tbody"></tbody></table></div>
+                  <div style="position:relative" id="img-picker-wrap"><div class="img-picker" id="img-picker"></div><div class="img-preview-large" id="img-preview-large"><img src="" alt="Preview"></div></div>
+                  <div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-primary btn-sm" onclick="saveEditorChanges()"><span class="ms">save</span>Guardar cambios</button><a class="btn btn-outline btn-sm" id="editor-download-link" target="_blank"><span class="ms">download</span>Descargar</a></div>
+                </div>
+                <div id="editor-ai" class="editor-content" style="display:none">
+                  <div style="display:flex;gap:8px;margin-bottom:8px"><input id="ai-command" placeholder="Ej: Cambiá frecuencia de Bomba X a 7 días..." style="flex:1;height:36px;padding:0 12px;border:1px solid #E5E7EB;border-radius:10px;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')runAiCommand()"><button class="btn btn-primary btn-sm" onclick="runAiCommand()">▶</button></div>
+                  <div id="ai-history" style="max-height:200px;overflow-y:auto;font-size:12px;color:#6B7280"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SECCIÓN: Correos ═══════════════════════ -->
+      <div id="view-correos" style="display:none">
+        <div class="view-head">
+          <h1>Archivo de <span>Correos</span></h1>
+          <div class="search"><span class="ms">search</span><input id="correos-search" placeholder="Buscar por remitente o asunto..." oninput="browseCorreos()"></div>
+          <span id="correos-path" style="font-size:12px;color:#6B7280;font-family:ui-monospace,Menlo,monospace">/</span>
+          <div class="spacer"></div>
+          <button class="btn btn-outline btn-sm" onclick="toggleModal('modal-archivar')"><span class="ms">move_to_inbox</span>Archivar</button>
+        </div>
+        <div class="correos-grid">
+          <div id="correos-tree"><p style="padding:20px;color:#9CA3AF;text-align:center;font-size:12.5px">Configurá la ruta del disco AirPort en Configuración</p></div>
+          <div id="correos-preview"><p>Seleccioná un correo para previsualizar</p></div>
+        </div>
+      </div>
+
+    </div>
+    <footer class="footer"><strong>INGELUBSA&nbsp;S.A.S.</strong>&nbsp;· LUBIA © 2026</footer>
+  </div>
+
+  <!-- ── Chat del proyecto (empuja el contenido) ────── -->
+  <div id="chat-panel" style="display:none">
+    <div class="chat-head">
+      <div class="chat-badge">IA</div>
+      <h3>Chat del proyecto</h3>
+      <button class="modal-close" onclick="toggleChat()">×</button>
+    </div>
+    <div class="chat-messages" id="chat-msgs"><div class="chat-msg assistant">Hola, soy LUBIA. Preguntame sobre este proyecto. Escribí <b>@</b> para citar un archivo.</div></div>
+    <div class="chat-input-wrap">
+      <div class="chat-attachments" id="chat-attach"></div>
+      <div class="at-picker" id="at-picker"></div>
+      <div class="chat-row"><input id="chat-input" placeholder="Escribí @ para citar un archivo..." onkeydown="handleChatKey(event)" oninput="handleAtInput()"><button onclick="sendChat()">➤</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo Proyecto -->
+<div class="modal-overlay" id="modal-proyecto"><div class="modal" style="max-width:480px"><div class="modal-header"><h2>Nuevo Proyecto</h2><button class="modal-close" onclick="toggleModal('modal-proyecto')">×</button></div><div class="form-group"><label>Nombre del proyecto</label><input id="new-project-name" placeholder="Ej: Planta Norte, Ruta Lubricación 2026..."></div><button class="btn btn-primary" onclick="crearProyecto()">Crear Proyecto</button></div></div>
+
+<!-- Modal: Settings -->
+<div class="modal-overlay" id="modal-settings"><div class="modal" style="max-width:500px"><div class="modal-header"><h2>Configuración</h2><button class="modal-close" onclick="toggleModal('modal-settings')">×</button></div><p style="font-size:12.5px;color:#6B7280;margin-bottom:14px;line-height:1.55">Las API keys (Deepgram, Claude, Supabase) se configuran en el archivo <code>.env</code> del servidor.</p><div class="settings-row"><label>Ruta Correos</label><input id="set-ruta-correos" placeholder="Z:\correos o /mnt/correos"></div><p style="font-size:11px;color:#9CA3AF;margin-top:4px">Donde está montado el disco AirPort</p><div style="margin-top:16px;display:flex;gap:10px;align-items:center"><button class="btn btn-primary" onclick="saveSettings()"><span class="ms">save</span>Guardar</button><span id="settings-msg" style="font-size:13px"></span></div></div></div>
+
+<!-- Modal: Archivar correos -->
+<div class="modal-overlay" id="modal-archivar"><div class="modal" style="max-width:500px"><div class="modal-header"><h2>Archivar correos</h2><button class="modal-close" onclick="toggleModal('modal-archivar')">×</button></div><div class="form-group"><label>Servidor IMAP</label><input id="imap-host" placeholder="mail.ingelubsa.com"></div><div class="form-group"><label>Usuario</label><input id="imap-user" placeholder="correo@ingelubsa.com"></div><div class="form-group"><label>Contraseña</label><input id="imap-pass" type="password"></div><div class="form-group"><label>Antigüedad (meses)</label><input id="imap-antiguedad" value="12" type="number"></div><label style="display:flex;align-items:center;gap:8px;margin:12px 0;font-size:13px"><input type="checkbox" id="imap-borrar" style="accent-color:#EAB308">Borrar del servidor después de archivar</label><button class="btn btn-primary" id="btn-archivar" onclick="archivarCorreos()"><span class="ms">move_to_inbox</span>Ejecutar Archivo</button><div id="correos-result" class="banner" style="margin-top:12px"></div></div></div>
+
+<!-- Modal: Plantilla -->
+<div class="modal-overlay" id="modal-template"><div class="modal" style="max-width:550px"><div class="modal-header"><h2 id="template-modal-title">Nueva Plantilla</h2><button class="modal-close" onclick="toggleModal('modal-template')">×</button></div><div class="form-group"><label>Nombre</label><input id="tpl-name" placeholder="Ej: Ruta de Lubricación"></div><div class="form-group"><label>Descripción</label><input id="tpl-desc" placeholder="Para qué sirve esta plantilla..."></div><div class="form-group"><label>Columnas (una por línea o subir Excel)</label><textarea id="tpl-columns" rows="5" placeholder="Activo&#10;Componente&#10;Cantidad&#10;Lubricante&#10;Frecuencia"></textarea></div><div class="form-group"><label>O subir Excel de ejemplo (extrae columnas automáticamente)</label><input type="file" id="tpl-file" accept=".xlsx,.xls" onchange="uploadTemplateFile(this.files[0])"></div><input type="hidden" id="tpl-id"><button class="btn btn-primary" onclick="saveTemplate()"><span class="ms">save</span>Guardar Plantilla</button></div></div>
+
+<!-- Modal: Importar plantilla -->
+<div class="modal-overlay" id="modal-import"><div class="modal" style="max-width:550px"><div class="modal-header"><h2>Importar Plantilla</h2><button class="modal-close" onclick="toggleModal('modal-import')">×</button></div><div class="form-group"><label>Proyecto origen</label><select id="import-project" onchange="loadImportTemplates()"><option value="">Seleccionar proyecto...</option></select></div><div class="form-group"><label>Plantilla</label><select id="import-template"><option value="">Primero seleccioná un proyecto</option></select></div><button class="btn btn-primary" onclick="importTemplate()"><span class="ms">download</span>Importar</button></div></div>
+
+<script>
+// ── State ──────────────────────────────────
+let projects=[],currentProject=null,currentTranscription=null,currentData=null;
+let chatMessages=[],chatAttachments=[];
+let atPickerFiles=[];
+
+// ── Navigation ─────────────────────────────
+async function loadProjects(){const r=await fetch("/api/projects");projects=await r.json();renderHome()}
+function renderHome(){const g=document.getElementById("project-grid"),e=document.getElementById("empty-state");if(projects.length===0){g.innerHTML="";e.style.display="block"}else{e.style.display="none";g.innerHTML=projects.map(p=>`<div class="card" onclick="openProject('${p.id}')"><div class="card-icon">🏭</div><h3>${esc(p.name)}</h3><div class="card-meta">Creado ${new Date(p.createdAt).toLocaleDateString("es-CO")}</div><div class="card-footer"><span class="card-link">Entrar →</span></div></div>`).join("")}}loadProjects();
+
+function showSection(section){document.querySelectorAll(".nav-link").forEach(l=>l.classList.toggle("active",l.dataset.nav===section));document.getElementById("view-proyectos").style.display=section==="proyectos"?"block":"none";document.getElementById("view-correos").style.display=section==="correos"?"block":"none";if(section==="correos")browseCorreos()}
+
+function goHome(){currentProject=null;document.getElementById("view-home").style.display="block";document.getElementById("view-project").style.display="none";loadProjects()}
+function openProject(id){currentProject=projects.find(p=>p.id===id);document.getElementById("view-home").style.display="none";document.getElementById("view-project").style.display="block";document.getElementById("project-title").textContent=currentProject.name;loadSedes();loadChat();loadTemplates()}
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
+
+// ── Sedes ───────────────────────────────────
+async function loadSedes(){if(!currentProject)return;const r=await fetch(`/api/projects/${currentProject.id}/sedes`);const sedes=await r.json();const el=document.getElementById("sede-list");if(sedes.length===0){el.innerHTML='<p style="font-size:12px;color:#9CA3AF;text-align:center;padding:20px 0">Sin sedes. Creá una.</p>'}else{el.innerHTML=sedes.map(s=>`<div class="tree-item${currentSedeId===s.id?' selected':''}" onclick="selectSede('${s.id}','${esc(s.name)}')"><span class="icon">🏭</span><span class="name">${esc(s.name)}</span></div>`).join("")}document.getElementById("btn-folder").disabled=!currentSedeId}
+let currentSedeId=null,currentSedeName="",currentFolderId=null;
+async function newSede(){const n=prompt("Nombre de la sede:");if(!n)return;await fetch(`/api/projects/${currentProject.id}/sedes`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n})});loadSedes()}
+async function selectSede(id,name){if(currentSedeId===id){currentSedeId=null;currentSedeName="";document.getElementById("btn-folder").disabled=true;document.getElementById("file-table").innerHTML='<p style="padding:30px;color:#9CA3AF;text-align:center">Seleccioná una sede para ver sus archivos</p>';loadSedes();if(document.getElementById("chat-panel").style.display==="flex")loadChat();return}currentSedeId=id;currentSedeName=name;currentFolderId=null;document.getElementById("btn-folder").disabled=false;loadSedes();loadProjectFiles();if(document.getElementById("chat-panel").style.display==="flex")loadChat()}
+async function newFolderInSede(){if(!currentSedeId)return alert("Seleccioná una sede primero");const n=prompt("Nombre de la carpeta:");if(!n)return;await fetch(`/api/projects/${currentProject.id}/folders`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,sedeId:currentSedeId})});loadProjectFiles()}
+async function uploadMultiple(fileList){if(!fileList||fileList.length===0||!currentProject)return;if(!currentSedeId){alert("Seleccioná una sede primero");return}const el=document.getElementById("file-table");el.innerHTML=`<p style="padding:30px;color:#6B7280;text-align:center"><span class="spinner"></span> Subiendo ${fileList.length} archivo(s)...</p>`;const f=new FormData();for(const file of fileList)f.append("files",file);f.append("sedeId",currentSedeId);if(currentFolderId)f.append("folderId",currentFolderId);try{const r=await fetch(`/api/projects/${currentProject.id}/files`,{method:"POST",body:f});const d=await r.json();if(d.error){alert("Error: "+d.error);el.innerHTML=`<p style="padding:30px;color:#EF4444">Error: ${esc(d.error)}</p>`}}catch(e){alert("Error de conexión: "+e.message)}document.getElementById("file-upload-proj").value="";loadProjectFiles()}
+
+// ── Project Files ───────────────────────────
+async function loadProjectFiles(){if(!currentProject||!currentSedeId)return;const r=await fetch(`/api/projects/${currentProject.id}/files?sede_id=${currentSedeId}`);const d=await r.json();const el=document.getElementById("file-table");const folders=d.folders||[],files=d.files||[];if(folders.length===0&&files.length===0){el.innerHTML='<p style="padding:30px;color:#9CA3AF;text-align:center">Sede vacía. Subí archivos o creá carpetas.</p>';return}const icons={audio:/audio|mp3|wav|webm|m4a|ogg/,image:/image/,pdf:/pdf/,word:/word|doc|docx/,excel:/excel|xls|xlsx/,video:/video|mp4|mov/};function ico(m){for(const[k,v]of Object.entries(icons))if(v.test(m||""))return{audio:"🎵",image:"🖼️",pdf:"📄",word:"📝",excel:"📊",video:"🎬"}[k];return"📎"}let h="";// Archivos sin carpeta (raíz de la sede)
+const rootFiles=files.filter(f=>!f.folder_id);for(const f of rootFiles)h+=fileRow(f);// Carpetas con sus archivos dentro
+for(const fld of folders){const subFiles=files.filter(f=>f.folder_id===fld.id);h+=`<div class="tree-item folder-drop" style="background:#F9FAFB;font-weight:600;border-bottom:2px solid #E5E7EB;cursor:pointer" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropOnFolder(event,'${fld.id}')" onclick="toggleFolderFiles('f-${fld.id}')"><span class="icon" id="ico-f-${fld.id}">▼</span><span class="icon">📂</span><span class="name">${esc(fld.name)}</span><span style="width:100px;font-size:12px;color:#6B7280">${new Date(fld.created_at).toLocaleDateString("es-CO")}</span><span style="width:80px;font-size:12px;color:#6B7280">Carpeta</span><span style="width:70px;font-size:12px;color:#6B7280">${subFiles.length} arch.</span><button class="btn btn-xs btn-red" onclick="event.stopPropagation();delFolder('${fld.id}')">✕</button></div><div id="f-${fld.id}" class="folder-children">${subFiles.map(f=>`<div style="padding-left:24px">${fileRow(f)}</div>`).join("")}</div>`}if(!h)h='<p style="padding:30px;color:#9CA3AF;text-align:center">Carpeta vacía. Subí archivos.</p>';el.innerHTML=h;document.getElementById("select-all").checked=false;updateBulkBar()}
+function fileRow(f){const icons={audio:/audio|mp3|wav|webm|m4a|ogg/,image:/image/,pdf:/pdf/,word:/word|doc|docx/,excel:/excel|xls|xlsx/};function ico(m){for(const[k,v]of Object.entries(icons))if(v.test(m||""))return{audio:"🎵",image:"🖼️",pdf:"📄",word:"📝",excel:"📊"}[k];return"📎"}const d=new Date(f.created_at),dd=d.toLocaleDateString("es-CO"),kb=(f.size/1024).toFixed(1);return`<div class="tree-item" draggable="true" ondragstart="dragFile(event,'${f.id}')" ondragend="dragEnd()" onclick="selectFile('${f.id}','${esc(f.name)}','${esc(f.mimetype||"")}','${kb}','${dd}')"><input type="checkbox" class="file-check" style="width:15px;height:15px;cursor:pointer;margin-right:12px" onclick="event.stopPropagation()" onchange="updateBulkBar()" data-id="${f.id}"><span class="icon">${ico(f.mimetype)}</span><span class="name">${esc(f.name)}</span><span style="width:100px;font-size:12px;color:#6B7280">${dd}</span><span style="width:80px;font-size:12px;color:#6B7280">${(f.mimetype||"").split("/")[1]||"archivo"}</span><span style="width:70px;font-size:12px;color:#6B7280">${kb} KB</span><button class="btn btn-xs btn-outline" onclick="event.stopPropagation();renameFile('${f.id}','${esc(f.name)}')" title="Renombrar" style="margin-right:2px">✎</button><button class="btn btn-xs btn-red" onclick="event.stopPropagation();delProjectFile('${f.id}')">✕</button></div>`}
+let selectedFileId=null;
+function selectFile(id,name,mime,size,date){selectedFileId=id;currentFolderId=null;document.querySelectorAll("#file-table .tree-item").forEach(e=>e.classList.remove("selected"));event.currentTarget?.classList.add("selected");const pc=document.getElementById("preview-content"),pt=document.getElementById("preview-transcribe");document.getElementById("file-preview").querySelector("p").style.display="none";const isAudio=/audio|mp3|wav|webm|m4a/.test(mime),isExcel=/excel|xlsx|xls|spreadsheet/.test(mime),isImage=/image/.test(mime),isPDF=/pdf/.test(mime),viewUrl=`/api/projects/${currentProject.id}/files/${id}/view`;
+
+if(isExcel){pc.style.display="block";pt.style.display="none";pc.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><strong>${esc(name)}</strong><br><span style="font-size:12px;color:#6B7280">${size} KB · ${date}</span></div><div style="display:flex;gap:4px"><a class="btn btn-primary btn-sm" href="/editor.html?id=${id}&project=${currentProject.id}" target="_blank">✏️ Editar</a><a class="btn btn-outline btn-sm" href="${viewUrl}">⬇ Descargar</a></div></div><p style="color:#6B7280;font-size:13px;text-align:center;padding:20px">📊 El editor se abre en una pestaña nueva con tabla editable, auto-guardado y soporte para <code>/img</code>.</p>`}else{pc.style.display="block";pt.style.display="none";document.getElementById("banner").className="banner";document.getElementById("transcript-box").style.display="none";document.getElementById("extract-section").style.display="none";let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><strong>${esc(name)}</strong><br><span style="font-size:12px;color:#6B7280">${size} KB · ${date}</span></div><div style="display:flex;gap:4px">`;if(isAudio)html+=`<button class="btn btn-primary btn-sm" onclick="transcribeProjectFile()">⚡ Transcribir</button>`;if(isImage||isPDF)html+=`<a class="btn btn-outline btn-sm" href="${viewUrl}" target="_blank">🔗 Abrir</a>`;html+=`</div></div>`;if(isImage)html+=`<img src="${viewUrl}" style="max-width:100%;max-height:300px;border-radius:8px;border:1px solid #E5E7EB">`;else if(isPDF)html+=`<iframe src="${viewUrl}" style="width:100%;height:350px;border:1px solid #E5E7EB;border-radius:8px"></iframe>`;else if(isAudio)html+=`<audio controls src="${viewUrl}" style="width:100%;margin-top:8px"></audio><p style="font-size:12px;color:#6B7280;margin-top:8px">Usá ⚡ Transcribir para extraer datos con IA</p>`;else html+=`<p style="color:#6B7280;font-size:13px">Vista previa no disponible. <a href="${viewUrl}" target="_blank" style="color:#EAB308">Abrir archivo →</a></p>`;pc.innerHTML=html;if(isAudio)pt.style.display="block"}}
+async function transcribeProjectFile(){if(!selectedFileId)return;showBanner("Transcribiendo...","processing");const r=await fetch(`/api/transcribe-file/${selectedFileId}`,{method:"POST"});const d=await r.json();if(d.error){showBanner(d.error,"error");return}currentTranscription=d.transcription;const tb=document.getElementById("transcript-box");tb.textContent=d.transcription;tb.style.display="block";document.getElementById("preview-transcribe").style.display="block";let be=document.getElementById("btn-extract");if(!be){be=document.createElement("button");be.id="btn-extract";be.className="btn btn-primary btn-sm";be.textContent="⚡ Extraer datos con IA";be.onclick=extraerDatos;tb.after(be)}be.style.display="inline-flex";hideBanner()}
+async function delProjectFile(id){if(!confirm("Eliminar?"))return;await fetch(`/api/projects/${currentProject.id}/files/${id}`,{method:"DELETE"});loadProjectFiles();document.getElementById("preview-content").style.display="none";document.getElementById("file-preview").querySelector("p").style.display="block"}
+async function renameFile(id,currentName){const n=prompt("Nuevo nombre:",currentName);if(!n||n===currentName)return;await fetch(`/api/projects/${currentProject.id}/files/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n})});loadProjectFiles()}
+function selectFolder(id){currentFolderId=id;selectedFileId=null;document.querySelectorAll("#file-table .tree-item").forEach(e=>e.classList.remove("selected"));event.currentTarget?.classList.add("selected");document.getElementById("preview-content").style.display="none";document.getElementById("preview-transcribe").style.display="none";document.getElementById("file-preview").querySelector("p").style.display="block"}
+function toggleFolderFiles(divId){const el=document.getElementById(divId);if(!el)return;const isHidden=el.style.display==="none";el.style.display=isHidden?"block":"none";const ico=document.getElementById("ico-"+divId);if(ico)ico.textContent=isHidden?"▼":"▶"}
+async function delFolder(id){if(!confirm("Eliminar carpeta?"))return;await fetch(`/api/projects/${currentProject.id}/folders/${id}`,{method:"DELETE"});loadProjectFiles()}
+
+// ── Chat panel ──────────────────────────────
+function toggleChat(){const p=document.getElementById("chat-panel");p.style.display=p.style.display==="flex"?"none":"flex";if(p.style.display==="flex"){loadChat();document.getElementById("chat-input").focus()}}
+function addComponentRow(n="",c="",l="",f="",u=""){const t=document.getElementById("comp-tbody"),r=t.insertRow();r.innerHTML=`<td><input value="${esc(n)}" placeholder="Nombre"></td><td><input value="${esc(c)}" style="width:70px"></td><td><input value="${esc(l)}" placeholder="VG EP 2..."></td><td><input value="${esc(f)}" placeholder="C/30 días..."></td><td><input value="${esc(u)}" placeholder="Nave 3..."></td>`}
+async function generarExcel(){const a=document.getElementById("fld-activo").value,obs=document.getElementById("fld-obs").value,comps=[],rows=document.getElementById("comp-tbody").rows;for(const r of rows){const c=r.querySelectorAll("input");if(c[0]&&c[0].value.trim())comps.push({nombre:c[0].value,cantidad:c[1].value,lubricante:c[2].value,frecuencia:c[3].value,ubicacion:c[4].value})}showBanner("Generando Excel...","processing");const res=await fetch("/api/generar-excel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:{activo:a,componentes:comps,observaciones:obs}})});if(!res.ok){const er=await res.json();showBanner(er.error||"Error","error");return}const blob=await res.blob(),url=URL.createObjectURL(blob),dl=document.createElement("a");dl.href=url;dl.download=`lubia_${a||"ruta"}_${Date.now()}.xlsx`;dl.click();URL.revokeObjectURL(url);showBanner("✅ Excel descargado","success")}
+
+// ── Proyectos ──────────────────────────────
+async function crearProyecto(){const n=document.getElementById("new-project-name").value.trim();if(!n)return alert("Poné un nombre");const r=await fetch("/api/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n})});const p=await r.json();projects.push(p);renderHome();document.getElementById("new-project-name").value="";toggleModal("modal-proyecto")}
+function toggleModal(id){document.getElementById(id).classList.toggle("active")}
+
+// ── Audio: extraer y Excel ──────────────────
+async function extraerDatos(){if(!currentTranscription)return;showBanner("Claude analizando...","processing");let templates=[];try{const r=await fetch(`/api/projects/${currentProject.id}/templates`);templates=await r.json()}catch{}const r=await fetch("/api/extraer",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({transcription:currentTranscription,templates})});currentData=await r.json();if(currentData.error){showBanner(currentData.error,"error");return}document.getElementById("fld-activo").value=currentData.activo||"";const tb=document.getElementById("comp-tbody");tb.innerHTML="";(currentData.componentes||[]).forEach(c=>addComponentRow(c.nombre||"",c.cantidad||"",c.lubricante||"",c.frecuencia||"",c.ubicacion||""));const fa=currentData.faltantes||[],pr=currentData.preguntas||[],md=document.getElementById("missing-alert");if(fa.length||pr.length){md.style.display="block";md.innerHTML=`<h4>⚠️ Datos faltantes</h4>${fa.map(f=>`<li>${esc(f)}</li>`).join("")}${pr.length?`<p style="margin-top:8px;font-weight:600">Preguntas:</p>`:""}${pr.map(q=>`<li style="color:#991B1B">${esc(q)}</li>`).join("")}`}else{md.style.display="none"}document.getElementById("extract-section").style.display="block";document.getElementById("preview-transcribe").style.display="block";document.getElementById("btn-extract")&&(document.getElementById("btn-extract").disabled=false);hideBanner()}
+
+// ── Chat ───────────────────────────────────
+function chatKey(){return currentSedeId?`chat_${currentProject.id}_${currentSedeId}`:`chat_${currentProject.id}`}
+function loadChat(){chatMessages=JSON.parse(localStorage.getItem(chatKey())||"[]");chatAttachments=[];renderChat();document.getElementById("chat-attach").innerHTML=""}
+function renderChat(){const el=document.getElementById("chat-msgs");if(chatMessages.length===0){el.innerHTML='<div class="chat-msg assistant">🤖 Hola, soy LUBIA. Preguntame sobre este proyecto. Escribí <b>@</b> para citar un archivo.</div>';return}el.innerHTML=chatMessages.map(m=>{let at="";if(m.attachments?.length){at='<div class="attach">';for(const a of m.attachments)at+=`📎 ${esc(a.name)} `;at+='</div>'}return`<div class="chat-msg ${m.role}">${esc(m.content)}${at}</div>`}).join("");el.scrollTop=el.scrollHeight}
+function handleChatKey(e){if(e.key==="Enter"){e.preventDefault();sendChat()}else if(e.key==="ArrowDown"||e.key==="ArrowUp"){navigateAtPicker(e.key==="ArrowDown"?1:-1)}else if(e.key==="Escape"){hideAtPicker()}}
+function handleAtInput(){const inp=document.getElementById("chat-input");const val=inp.value;const pos=inp.selectionStart;const lastAt=val.lastIndexOf("@",pos-1);if(lastAt>=0&&(lastAt===0||val[lastAt-1]===" "||val[lastAt-1]==="\n")){const q=val.slice(lastAt+1,pos).toLowerCase();showAtPicker(q)}else{hideAtPicker()}}
+async function showAtPicker(q){if(!currentProject)return;try{const r=await fetch(`/api/projects/${currentProject.id}/files`);const d=await r.json();const allFiles=[];function addFiles(files,path){for(const f of files)allFiles.push({...f,path:path+f.name})}function walk(folders,files,path,parentId){const subs=folders.filter(x=>x.parentId===parentId);for(const f of subs){const fp=path+f.name+"/";addFiles(files.filter(x=>x.folderId===f.id),fp);walk(folders,files,fp,f.id)}}addFiles(d.files.filter(x=>!x.folderId),"/");walk(d.folders||[],d.files||[],"/",null);atPickerFiles=q?allFiles.filter(x=>x.name.toLowerCase().includes(q)):allFiles;const el=document.getElementById("at-picker");if(atPickerFiles.length===0){el.style.display="none";return}atSelIdx=0;el.innerHTML=atPickerFiles.map((f,i)=>`<div class="at-item${i===0?' sel':''}" data-idx="${i}">📄 ${esc(f.name)}<span style="color:#9CA3AF;margin-left:auto;font-size:11px">${esc(f.path)}</span></div>`).join("");el.style.display="block"}catch(err){console.error("Picker error:",err);hideAtPicker()}}
+function hideAtPicker(){document.getElementById("at-picker").style.display="none"}
+let atSelIdx=0;
+function navigateAtPicker(dir){const el=document.getElementById("at-picker");if(el.style.display==="none")return;const items=el.querySelectorAll(".at-item");items.forEach(i=>i.classList.remove("sel"));atSelIdx=Math.max(0,Math.min(items.length-1,atSelIdx+dir));const s=items[atSelIdx];if(s){s.classList.add("sel");s.scrollIntoView({block:"nearest"})}}
+function selectAtFile(idx){const f=atPickerFiles[idx];if(!f)return;addChatAttachment(f);const inp=document.getElementById("chat-input");const val=inp.value;const pos=inp.selectionStart;const lastAt=val.lastIndexOf("@",pos-1);if(lastAt>=0){inp.value=val.slice(0,lastAt)+val.slice(pos)}hideAtPicker();inp.focus()}
+function addChatAttachment(f){if(chatAttachments.find(x=>x.id===f.id))return;chatAttachments.push(f);document.getElementById("chat-attach").innerHTML=chatAttachments.map(a=>`<span class="chat-chip">📎 ${esc(a.name)} <span class="remove" onclick="removeAttachment('${a.id}')">×</span></span>`).join("")}
+function removeAttachment(id){chatAttachments=chatAttachments.filter(x=>x.id!==id);document.getElementById("chat-attach").innerHTML=chatAttachments.map(a=>`<span class="chat-chip">📎 ${esc(a.name)} <span class="remove" onclick="removeAttachment('${a.id}')">×</span></span>`).join("")}
+function sendChat(){const inp=document.getElementById("chat-input");const txt=inp.value.trim();if(!txt&&chatAttachments.length===0)return;const msg={role:"user",content:txt,attachments:[...chatAttachments]};chatMessages.push(msg);inp.value="";chatAttachments=[];document.getElementById("chat-attach").innerHTML="";renderChat();const msgsEl=document.getElementById("chat-msgs");msgsEl.scrollTop=msgsEl.scrollHeight;saveChat();fetchChatResponse(txt)}
+
+async function fetchChatResponse(userMsg){
+  const loading={role:"assistant",content:'<span class="spinner"></span> Pensando...'};
+  chatMessages.push(loading);renderChat();const msgsEl=document.getElementById("chat-msgs");msgsEl.scrollTop=msgsEl.scrollHeight;saveChat();
+  try{
+    // Recolectar contexto del proyecto: nombres de archivos
+    let ctx="";if(currentProject){try{const r=await fetch(`/api/projects/${currentProject.id}/files`);const d=await r.json();const allFiles=[...d.files||[]];const names=allFiles.map(f=>f.name).join(", ");if(names)ctx=`Archivos del proyecto: ${names}. `}catch{}}
+    const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:userMsg,projectId:currentProject?.id,context:ctx})});
+    const d=await r.json();
+    chatMessages.pop(); // quitar loading
+    if(d.error){chatMessages.push({role:"assistant",content:"❌ "+d.error})}else{chatMessages.push({role:"assistant",content:d.reply||"(sin respuesta)"})}
+  }catch(e){chatMessages.pop();chatMessages.push({role:"assistant",content:"❌ Error: "+e.message})}
+  renderChat();msgsEl.scrollTop=msgsEl.scrollHeight;saveChat()
+}
+function saveChat(){localStorage.setItem(chatKey(),JSON.stringify(chatMessages))}
+
+// ── Settings ───────────────────────────────
+async function loadSettings(){const r=await fetch("/api/settings");const s=await r.json();document.getElementById("set-ruta-correos").value=s.RUTA_CORREOS||""}loadSettings();
+async function saveSettings(){const d={RUTA_CORREOS:document.getElementById("set-ruta-correos").value.trim()};const r=await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});const j=await r.json();const m=document.getElementById("settings-msg");if(j.ok){m.textContent="✅ Guardado";m.style.color="#22C55E"}else{m.textContent="❌ Error";m.style.color="#EF4444"}setTimeout(()=>{m.textContent=""},3000)}
+
+// ── Correos ────────────────────────────────
+async function browseCorreos(path=""){const tree=document.getElementById("correos-tree");const search=document.getElementById("correos-search").value;const sp=document.getElementById("correos-path");try{const r=await fetch(`/api/correos/browse?path=${encodeURIComponent(path)}&search=${encodeURIComponent(search)}`);const d=await r.json();if(d.error){tree.innerHTML=`<p style="padding:20px;color:#EF4444">${d.error}</p>`;return}sp.textContent=d.path||"/";let h="";if(path){h+=`<div class="tree-item" onclick="browseCorreos('${path.split("/").slice(0,-1).join("/")}')"><span class="icon">📁</span><span class="name">.. (subir)</span></div>`}for(const f of d.folders){h+=`<div class="tree-item" onclick="browseCorreos('${f.path}')"><span class="icon">📂</span><span class="name">${esc(f.name)}</span><span class="meta">${f.count} 📧</span></div>`}for(const f of d.files){h+=`<div class="tree-item" onclick="previewCorreo('${encodeURIComponent(f.path+"\\/"+f.name)}')"><span class="icon">📧</span><span class="name">${esc(f.asunto||f.name)}</span><span class="meta">${f.fecha} · ${f.sizeKB} KB</span></div>`}tree.innerHTML=h||'<p style="padding:20px;color:#9CA3AF;text-align:center">Carpeta vacía</p>'}catch(e){tree.innerHTML=`<p style="padding:20px;color:#EF4444">Error: ${e.message}</p>`}}
+
+async function previewCorreo(file){const el=document.getElementById("correos-preview");el.innerHTML='<p style="color:#6B7280;text-align:center;padding:40px 0"><span class="spinner"></span></p>';try{const r=await fetch(`/api/correos/read?file=${encodeURIComponent(file)}`);const d=await r.json();if(d.error){el.innerHTML=`<p style="color:#EF4444">${d.error}</p>`;return}el.innerHTML=`<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #E5E7EB"><div class="correos-meta"><strong>De:</strong> ${esc(d.from)}</div><div class="correos-meta"><strong>Para:</strong> ${esc(d.to)}</div><div class="correos-meta"><strong>Asunto:</strong> ${esc(d.subject)}</div><div class="correos-meta"><strong>Fecha:</strong> ${esc(d.date)}</div></div><div style="white-space:pre-wrap;font-size:13px;line-height:1.6;color:#374151">${esc(d.body)}</div>`}catch(e){el.innerHTML=`<p style="color:#EF4444">Error: ${e.message}</p>`}}
+
+async function archivarCorreos(){const btn=document.getElementById("btn-archivar");btn.disabled=true;btn.textContent="⏳ Archivando...";const el=document.getElementById("correos-result");el.className="banner processing";el.innerHTML='<span class="spinner"></span>Conectando...';try{const r=await fetch("/api/correos/archivar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({imapHost:document.getElementById("imap-host").value.trim(),imapUser:document.getElementById("imap-user").value.trim(),imapPass:document.getElementById("imap-pass").value,antiguedad:parseInt(document.getElementById("imap-antiguedad").value)||12,borrarDespues:document.getElementById("imap-borrar").checked})});const d=await r.json();if(d.error){el.className="banner error";el.innerHTML=d.error}else{el.className="banner success";el.innerHTML=`✅ ${d.totalArchivados} correos archivados (${d.espacioEstimadoMB} MB)`;setTimeout(browseCorreos,1000)}}catch(e){el.className="banner error";el.innerHTML="Error: "+e.message}btn.disabled=false;btn.textContent="📥 Ejecutar Archivo"}
+
+// ── UI / Listeners ──────────────────────────
+function showBanner(m,t){const b=document.getElementById("banner");b.className=`banner ${t}`;b.innerHTML=(t==="processing"?'<span class="spinner"></span>':"")+m}
+function hideBanner(){const b=document.getElementById("banner");b.className="banner";b.innerHTML=""}
+document.getElementById("at-picker").addEventListener("click",e=>{const it=e.target.closest(".at-item");if(!it)return;const idx=parseInt(it.dataset.idx);selectAtFile(idx)})
+
+// ── Bulk file operations ────────────────────
+function injectFileCheckboxes(){document.querySelectorAll("#file-table .tree-item").forEach(row=>{const cb=row.querySelector(".file-check");if(cb)return;const nameSpan=row.querySelector(".name");if(!nameSpan)return;const iconSpan=row.querySelector(".icon");if(iconSpan)iconSpan.insertAdjacentHTML("beforebegin",`<input type="checkbox" class="file-check" style="width:15px;height:15px;cursor:pointer;margin-right:12px" onclick="event.stopPropagation()" onchange="updateBulkBar()" data-id="${row.querySelector("[data-id]")?.dataset.id||""}">`)})}
+function updateBulkBar(){const checks=document.querySelectorAll("#file-table .file-check:checked");const bar=document.getElementById("bulk-bar");const n=checks.length;if(n>0){bar.style.display="flex";document.getElementById("bulk-count").textContent=n+" seleccionado"+(n>1?"s":"")}else{bar.style.display="none"}document.getElementById("select-all").checked=n>0&&n===document.querySelectorAll("#file-table .file-check").length}
+function toggleSelectAll(on){document.querySelectorAll("#file-table .file-check").forEach(c=>(c.checked=on));updateBulkBar()}
+function clearSelection(){document.querySelectorAll("#file-table .file-check").forEach(c=>c.checked=false);document.getElementById("select-all").checked=false;updateBulkBar()}
+async function bulkDelete(){const ids=[];document.querySelectorAll("#file-table .file-check:checked").forEach(c=>ids.push(c.dataset.id));if(!ids.length||!confirm("Eliminar "+ids.length+" archivos?"))return;for(const id of ids){await fetch(`/api/projects/${currentProject.id}/files/${id}`,{method:"DELETE"})}clearSelection();loadProjectFiles();document.getElementById("preview-content").style.display="none";document.getElementById("file-preview").querySelector("p").style.display="block"}
+
+// ── Drag & drop archivos ────────────────────
+let dragFileId=null;
+function dragFile(e,fileId){dragFileId=fileId;e.dataTransfer.effectAllowed="move";e.currentTarget.classList.add("dragging")}
+function dragEnd(){document.querySelectorAll(".dragging").forEach(el=>el.classList.remove("dragging"))}
+function dragOver(e){e.preventDefault();e.currentTarget.classList.add("drag-over")}
+function dragLeave(e){e.currentTarget.classList.remove("drag-over")}
+async function dropOnFolder(e,folderId){e.preventDefault();e.currentTarget.classList.remove("drag-over");dragEnd();if(!dragFileId||!folderId)return;await fetch(`/api/projects/${currentProject.id}/files/${dragFileId}/move`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({folderId})});dragFileId=null;loadProjectFiles()}
+
+// ── Plantillas ──────────────────────────────
+async function loadTemplates(){if(!currentProject)return;const r=await fetch(`/api/projects/${currentProject.id}/templates`);const data=await r.json();const el=document.getElementById("template-list");if(!data||data.length===0){el.innerHTML='<p style="font-size:12px;color:#9CA3AF;text-align:center;padding:10px 0">Sin plantillas</p>'}else{el.innerHTML=data.map(t=>`<div class="tree-item" style="font-size:12px;padding:4px 8px"><span class="icon">📄</span><span class="name" style="font-size:12px">${esc(t.name)}</span><button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editTemplate('${t.id}','${esc(t.name)}','${esc(t.description||"")}','${esc((t.columns||[]).join("\\n"))}')" title="Editar">✎</button><button class="btn btn-xs btn-red" onclick="event.stopPropagation();delTemplate('${t.id}')">✕</button></div>`).join("")}}
+function showTemplateModal(id){document.getElementById("tpl-id").value=id||"";document.getElementById("tpl-name").value="";document.getElementById("tpl-desc").value="";document.getElementById("tpl-columns").value="";document.getElementById("tpl-file").value="";document.getElementById("template-modal-title").textContent=id?"Editar Plantilla":"📋 Nueva Plantilla";toggleModal("modal-template")}
+function editTemplate(id,name,desc,cols){document.getElementById("tpl-id").value=id;document.getElementById("tpl-name").value=name;document.getElementById("tpl-desc").value=desc||"";document.getElementById("tpl-columns").value=(cols||"").replace(/\\n/g,"\n");document.getElementById("template-modal-title").textContent="Editar Plantilla";toggleModal("modal-template")}
+async function saveTemplate(){const id=document.getElementById("tpl-id").value;const name=document.getElementById("tpl-name").value.trim();if(!name)return alert("Nombre requerido");const desc=document.getElementById("tpl-desc").value.trim();const cols=document.getElementById("tpl-columns").value.split("\n").map(c=>c.trim()).filter(c=>c);const url=id?`/api/projects/${currentProject.id}/templates/${id}`:`/api/projects/${currentProject.id}/templates`;const method=id?"PUT":"POST";await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify({name,description:desc,columns:cols})});toggleModal("modal-template");loadTemplates()}
+async function delTemplate(id){if(!confirm("Eliminar plantilla?"))return;await fetch(`/api/projects/${currentProject.id}/templates/${id}`,{method:"DELETE"});loadTemplates()}
+async function uploadTemplateFile(file){if(!file)return;const f=new FormData();f.append("file",file);const r=await fetch(`/api/projects/${currentProject.id}/templates/upload`,{method:"POST",body:f});const d=await r.json();if(d.columns&&d.columns.length){document.getElementById("tpl-columns").value=d.columns.join("\n");if(!document.getElementById("tpl-name").value)document.getElementById("tpl-name").value=d.name}}
+async function showImportModal(){const sel=document.getElementById("import-project");sel.innerHTML='<option value="">Cargando...</option>';const r=await fetch("/api/projects");const projs=await r.json();sel.innerHTML='<option value="">Seleccionar proyecto...</option>'+projs.filter(p=>p.id!==currentProject?.id).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");toggleModal("modal-import")}
+async function loadImportTemplates(){const pid=document.getElementById("import-project").value;const sel=document.getElementById("import-template");if(!pid){sel.innerHTML='<option value="">Primero seleccioná un proyecto</option>';return}sel.innerHTML='<option value="">Cargando...</option>';const r=await fetch(`/api/projects/${pid}/templates`);const data=await r.json();sel.innerHTML='<option value="">Seleccionar plantilla...</option>'+data.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join("")}
+async function importTemplate(){const pid=document.getElementById("import-project").value;const tid=document.getElementById("import-template").value;if(!pid||!tid)return alert("Seleccioná proyecto y plantilla");await fetch(`/api/projects/${currentProject.id}/templates/import`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sourceProjectId:pid,sourceTemplateId:tid})});toggleModal("modal-import");loadTemplates()}
+</script>
+<script>
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&typeof clearSelection==="function")clearSelection()});
+</script>
+</body>
+</html>

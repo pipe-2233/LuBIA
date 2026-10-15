@@ -5,7 +5,7 @@ import { randomBytes } from "node:crypto";
 
 // Buzón en vivo: inicia sesión por IMAP y muestra los correos sin archivarlos.
 // Las credenciales viven SOLO en la memoria del servidor (nunca en disco) y la sesión
-// caduca tras 30 min sin uso. Todo se abre en modo solo-lectura: no marca como leído ni borra.
+// caduca tras 30 min sin uso. Solo se modifica una cosa: al abrir un correo se marca como leído. Nunca borra ni mueve.
 const router = Router();
 const sesiones = new Map(); // token -> { host, port, user, pass, ultimo }
 const TTL_MS = 30 * 60 * 1000;
@@ -165,13 +165,25 @@ router.get("/mail/messages", async (req, res) => {
   }
 });
 
-async function leerParseado(s, carpeta, uid) {
+async function leerParseado(s, carpeta, uid, marcarLeido = false) {
   return conImap(s, async (c) => {
-    const lock = await c.getMailboxLock(carpeta, { readOnly: true });
+    // Solo al abrir un correo se necesita escritura (para marcarlo como leído); el resto es solo-lectura
+    const lock = await c.getMailboxLock(carpeta, { readOnly: !marcarLeido });
     try {
-      const msg = await c.fetchOne(String(uid), { source: true }, { uid: true });
+      const msg = await c.fetchOne(String(uid), { source: true, flags: true }, { uid: true });
       if (!msg?.source) return null;
-      return await simpleParser(msg.source);
+      let recienLeido = false;
+      if (marcarLeido && !msg.flags?.has("\\Seen")) {
+        try {
+          await c.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
+          recienLeido = true;
+        } catch (e) {
+          console.log(`[Mail] No se pudo marcar como leído UID ${uid}: ${e.message}`);
+        }
+      }
+      const parsed = await simpleParser(msg.source);
+      parsed.__recienLeido = recienLeido;
+      return parsed;
     } finally {
       lock.release();
     }
@@ -183,7 +195,7 @@ router.get("/mail/message", async (req, res) => {
   const s = sesionDe(req, res);
   if (!s) return;
   try {
-    const p = await leerParseado(s, req.query.folder || "INBOX", req.query.uid);
+    const p = await leerParseado(s, req.query.folder || "INBOX", req.query.uid, true);
     if (!p) return res.status(404).json({ error: "Mensaje no encontrado" });
 
     let html = p.html || "";
@@ -196,6 +208,7 @@ router.get("/mail/message", async (req, res) => {
       }
     }
     res.json({
+      recienLeido: !!p.__recienLeido,
       spam: /^yes/i.test(String(p.headers?.get("x-spam-flag") || "")) || /^yes/i.test(String(p.headers?.get("x-spam-status") || "")),
       nombre: p.from?.value?.[0]?.name || p.from?.value?.[0]?.address || "Desconocido",
       correo: p.from?.value?.[0]?.address || "",

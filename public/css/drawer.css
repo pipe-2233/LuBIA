@@ -4,3 +4,5 @@
 .drawer .panel-scroll{flex:1;overflow:auto;max-height:none}
 body.tpl-open .drawer{transform:none}
 body.tpl-open .drawer-backdrop{opacity:1;pointer-events:auto}
+/* Los modales (Nueva plantilla, etc.) deben quedar por encima del panel flotante */
+.modal-overlay{z-index:1000}

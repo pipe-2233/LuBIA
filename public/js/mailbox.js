@@ -141,13 +141,15 @@ function pintarLista() {
   const enviados = (window.__mailCarpetas || []).find((f) => f.path === carpeta)?.especial === "\\Sent";
   const filtra = !enSpam && !enviados; // en Spam y Enviados se muestra todo
   const cnt = { principal: 0, otros: 0, spam: 0 };
-  if (filtra) for (const m of mensajes) cnt[m.spam ? "spam" : esConfiable(m) ? "principal" : "otros"]++;
+  // Los números cuentan correos SIN LEER de cada vista; bajan al abrirlos
+  if (filtra) for (const m of mensajes) if (!m.leido) cnt[m.spam ? "spam" : esConfiable(m) ? "principal" : "otros"]++;
+  const nb = (n) => (n ? `<b>${n}</b>` : "");
   const visibles = !filtra ? mensajes : mensajes.filter((m) => (m.spam ? "spam" : esConfiable(m) ? "principal" : "otros") === vista);
   const dom = confiables();
   const chips = !filtra ? "" : `<div class="mail-views">
-      <button class="${vista === "principal" ? "on" : ""}" data-v="principal" title="Correos de ${esc(dom.join(", "))}"><span class="ms">verified</span>Principal<b>${cnt.principal}</b></button>
-      <button class="${vista === "otros" ? "on" : ""}" data-v="otros" title="Remitentes fuera de tus dominios"><span class="ms">forum</span>Otros<b>${cnt.otros}</b></button>
-      <button class="${vista === "spam" ? "on" : ""}" data-v="spam"><span class="ms">report</span>Spam<b>${cnt.spam}</b></button>
+      <button class="${vista === "principal" ? "on" : ""}" data-v="principal" title="Correos de ${esc(dom.join(", "))}"><span class="ms">verified</span>Principal${nb(cnt.principal)}</button>
+      <button class="${vista === "otros" ? "on" : ""}" data-v="otros" title="Remitentes fuera de tus dominios"><span class="ms">forum</span>Otros${nb(cnt.otros)}</button>
+      <button class="${vista === "spam" ? "on" : ""}" data-v="spam"><span class="ms">report</span>Spam${nb(cnt.spam)}</button>
       <button class="mv-cfg ${panelDom ? "on" : ""}" id="mv-cfg" title="Dominios de confianza"><span class="ms">tune</span></button>
     </div>
     ${panelDom ? `<div class="mail-dom"><p>Aparecen en <b>Principal</b> los correos de estos dominios:</p>
@@ -215,10 +217,9 @@ async function abrirMensaje(uid) {
     const mm = mensajes.find((x) => x.uid === uid);
     if (mm && !mm.leido) {
       mm.leido = true;
-      document.querySelector(`.mail-item[data-uid="${uid}"]`)?.classList.remove("nuevo");
-      document.querySelector(`.mail-item[data-uid="${uid}"] .dot`)?.remove();
       const f = (window.__mailCarpetas || []).find((x) => x.path === carpeta);
       if (f && f.sinLeer > 0) { f.sinLeer--; pintarCarpetas(window.__mailCarpetas); }
+      pintarLista(); // actualiza los contadores de Principal / Otros / Spam
     }
     el.querySelectorAll(".mail-adj button").forEach((b) => b.addEventListener("click", () => bajarAdjunto(uid, b.dataset.i, b.dataset.n)));
   } catch (e) {

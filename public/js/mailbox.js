@@ -108,6 +108,18 @@ const vacioLector = () => '<div class="mail-empty"><span class="ms">drafts</span
 const esCarpetaSpam = () => (window.__mailCarpetas || []).find((f) => f.path === carpeta)?.especial === "\\Junk";
 
 let mensajes = [];
+let panelDom = false;
+
+// Dominios "de confianza": por defecto el del propio usuario (ej. ingelubsa.com). Editable y guardado en el navegador.
+const dominioPropio = () => (ss.get("mail_who").split("@")[1] || "").toLowerCase();
+function confiables() {
+  let l = [];
+  try { l = JSON.parse(ls.get("mail_trusted") || "[]"); } catch {}
+  const d = dominioPropio();
+  return [...new Set([d, ...l].filter(Boolean))];
+}
+const guardarConfiables = (l) => ls.set("mail_trusted", JSON.stringify(l.filter((x) => x !== dominioPropio())));
+const esConfiable = (m) => { const d = (m.correo.split("@")[1] || "").toLowerCase(); return confiables().some((c) => d === c || d.endsWith("." + c)); };
 
 async function cargarLista(reset) {
   const el = $("mail-list");
@@ -126,13 +138,22 @@ let hayMas = false;
 function pintarLista() {
   const el = $("mail-list");
   const enSpam = esCarpetaSpam();
-  const nSpam = enSpam ? 0 : mensajes.filter((m) => m.spam).length;
-  const nPrin = mensajes.length - nSpam;
-  const visibles = enSpam ? mensajes : mensajes.filter((m) => (vista === "spam" ? m.spam : !m.spam));
-  const chips = enSpam ? "" : `<div class="mail-views">
-      <button class="${vista === "principal" ? "on" : ""}" data-v="principal"><span class="ms">inbox</span>Principal<b>${nPrin}</b></button>
-      <button class="${vista === "spam" ? "on" : ""}" data-v="spam"><span class="ms">report</span>Spam<b>${nSpam}</b></button>
-    </div>`;
+  const enviados = (window.__mailCarpetas || []).find((f) => f.path === carpeta)?.especial === "\\Sent";
+  const filtra = !enSpam && !enviados; // en Spam y Enviados se muestra todo
+  const cnt = { principal: 0, otros: 0, spam: 0 };
+  if (filtra) for (const m of mensajes) cnt[m.spam ? "spam" : esConfiable(m) ? "principal" : "otros"]++;
+  const visibles = !filtra ? mensajes : mensajes.filter((m) => (m.spam ? "spam" : esConfiable(m) ? "principal" : "otros") === vista);
+  const dom = confiables();
+  const chips = !filtra ? "" : `<div class="mail-views">
+      <button class="${vista === "principal" ? "on" : ""}" data-v="principal" title="Correos de ${esc(dom.join(", "))}"><span class="ms">verified</span>Principal<b>${cnt.principal}</b></button>
+      <button class="${vista === "otros" ? "on" : ""}" data-v="otros" title="Remitentes fuera de tus dominios"><span class="ms">forum</span>Otros<b>${cnt.otros}</b></button>
+      <button class="${vista === "spam" ? "on" : ""}" data-v="spam"><span class="ms">report</span>Spam<b>${cnt.spam}</b></button>
+      <button class="mv-cfg ${panelDom ? "on" : ""}" id="mv-cfg" title="Dominios de confianza"><span class="ms">tune</span></button>
+    </div>
+    ${panelDom ? `<div class="mail-dom"><p>Aparecen en <b>Principal</b> los correos de estos dominios:</p>
+      <div class="mail-dom-l">${dom.map((x) => `<span class="dchip">${esc(x)}${x === dominioPropio() ? "" : `<button data-x="${esc(x)}" title="Quitar">×</button>`}</span>`).join("")}</div>
+      <div class="mail-dom-a"><input id="dom-in" placeholder="polarislabs.com"><button class="btn btn-primary btn-xs" id="dom-add">Agregar</button></div></div>` : ""}`;
+  const vacio = { principal: ["mark_email_read", "No hay correos de tus dominios en lo cargado"], otros: ["forum", "No hay otros correos"], spam: ["verified_user", "No hay spam en lo cargado"] }[vista] || ["mark_email_read", "No hay correos"];
   const filas = visibles.map((m) => `
     <div class="mail-item ${m.leido ? "" : "nuevo"} ${m.spam ? "es-spam" : ""} ${seleccion === m.uid ? "on" : ""}" data-uid="${m.uid}">
       ${avatar(m.nombre, m.correo)}
@@ -142,8 +163,17 @@ function pintarLista() {
         <div class="tags">${m.leido ? "" : '<i class="dot" title="Sin leer"></i>'}${m.adjuntos ? '<span class="ms" title="Tiene adjuntos">attach_file</span>' : ""}${m.spam && !enSpam ? '<span class="tag-spam">SPAM</span>' : ""}</div>
       </div>
     </div>`).join("");
-  el.innerHTML = chips + (filas || `<div class="mail-empty"><span class="ms">${vista === "spam" ? "verified_user" : "mark_email_read"}</span><p>${vista === "spam" ? "No hay spam en lo cargado" : "No hay correos"}</p></div>`);
-  el.querySelectorAll(".mail-views button").forEach((b) => b.addEventListener("click", () => { vista = b.dataset.v; pintarLista(); }));
+  el.innerHTML = chips + (filas || `<div class="mail-empty"><span class="ms">${vacio[0]}</span><p>${vacio[1]}</p></div>`);
+  el.querySelectorAll(".mail-views button[data-v]").forEach((b) => b.addEventListener("click", () => { vista = b.dataset.v; pintarLista(); }));
+  $("mv-cfg")?.addEventListener("click", () => { panelDom = !panelDom; pintarLista(); });
+  el.querySelectorAll(".dchip button").forEach((b) => b.addEventListener("click", () => { guardarConfiables(confiables().filter((x) => x !== b.dataset.x)); pintarLista(); }));
+  const add = () => {
+    const v = ($("dom-in")?.value || "").trim().toLowerCase().replace(/^.*@/, "").replace(/^www\./, "");
+    if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(v)) return;
+    guardarConfiables([...confiables(), v]); pintarLista();
+  };
+  $("dom-add")?.addEventListener("click", add);
+  $("dom-in")?.addEventListener("keydown", (e) => { if (e.key === "Enter") add(); });
   el.querySelectorAll(".mail-item").forEach((it) => it.addEventListener("click", () => abrirMensaje(Number(it.dataset.uid))));
   $("mail-more").style.display = hayMas ? "inline-flex" : "none";
 }

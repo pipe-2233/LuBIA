@@ -77,3 +77,13 @@
 .mail-empty .ms{font-size:44px;opacity:.55}.mail-empty p{margin:0;font-size:13px}
 
 @media(max-width:1000px){.mail-box{grid-template-columns:150px 1fr}.mail-reader{grid-column:1/-1;min-height:380px}}
+
+.mail-views{flex-wrap:wrap}
+.mail-views .mv-cfg{margin-left:auto;padding:0 8px}
+.mail-views .mv-cfg.on{background:var(--amber-soft);border-color:var(--amber);color:var(--amber-text)}
+.mail-dom{margin:8px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.mail-dom p{margin:0 0 8px;font-size:12px;color:var(--muted)}
+.mail-dom-l{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.dchip{display:inline-flex;align-items:center;gap:4px;background:var(--amber-soft);color:var(--amber-text);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700}
+.dchip button{border:none;background:none;cursor:pointer;color:var(--amber-text);font-size:14px;line-height:1;padding:0 0 0 2px}
+.mail-dom-a{display:flex;gap:6px}.mail-dom-a input{flex:1;min-width:0;height:30px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit;font-size:12.5px;background:var(--bg)}

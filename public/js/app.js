@@ -70,9 +70,13 @@ import {
   previewCorreo,
   archivarCorreos,
 } from "./correos.js";
+import * as MU from "./muestras.js";
 
 // ── Objeto global LuBIA para compatibilidad completa con HTML ─────
 window.LuBIA = {
+  muLoad: MU.muLoad, muRender: MU.muRender, muFiltroEstado: MU.muFiltroEstado, muSelect: MU.muSelect,
+  muAsignar: MU.muAsignar, muAvanzar: MU.muAvanzar, muVincular: MU.muVincular, muAnular: MU.muAnular,
+  muLote: MU.muLote, muReiniciar: MU.muReiniciar,
   // Proyectos y sedes
   loadProjects,
   renderHome,
@@ -209,7 +213,10 @@ export function showSection(section) {
   const vc = document.getElementById("view-correos");
   if (vp) vp.style.display = section === "proyectos" ? "block" : "none";
   if (vc) vc.style.display = section === "correos" ? "block" : "none";
+  const vm = document.getElementById("view-muestras");
+  if (vm) vm.style.display = section === "muestras" ? "block" : "none";
   if (section === "correos") browseCorreos();
+  if (section === "muestras") MU.muLoad();
 }
 
 export function railActive(nav) {
@@ -252,6 +259,11 @@ export function renderCrumbs() {
 }
 
 export function railNav(nav) {
+  if (nav === "muestras") {
+    showSection("muestras");
+    railActive("muestras");
+    return;
+  }
   if (nav === "correos") {
     showSection("correos");
     railActive("correos");

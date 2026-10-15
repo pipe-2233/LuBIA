@@ -9,6 +9,7 @@ import excelRoutes from "./src/routes/excel.routes.js";
 import templatesRoutes from "./src/routes/templates.routes.js";
 import correosRoutes from "./src/routes/correos.routes.js";
 import settingsRoutes from "./src/routes/settings.routes.js";
+import muestrasRoutes from "./src/routes/muestras.routes.js";
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use("/api", excelRoutes);
 app.use("/api", templatesRoutes);
 app.use("/api", correosRoutes);
 app.use("/api", settingsRoutes);
+app.use("/api", muestrasRoutes);
 
 // Manejador global de errores no capturados en rutas
 app.use((err, _req, res, _next) => {

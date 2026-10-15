@@ -49,6 +49,28 @@ async function conImap(s, fn) {
   }
 }
 
+// Carpetas con cantidad de no leídos (solo lectura: STATUS no modifica nada)
+async function listarCarpetas(c) {
+  const l = await c.list();
+  const out = [];
+  for (const f of l) {
+    let sinLeer = 0;
+    if (!f.flags?.has("\\Noselect")) {
+      try { sinLeer = (await c.status(f.path, { unseen: true })).unseen || 0; } catch {}
+    }
+    out.push({ path: f.path, name: f.name, especial: f.specialUse || "", sinLeer });
+  }
+  return out;
+}
+
+// Spam: marcas de SpamAssassin (cPanel) o banderas del servidor
+function esSpam(m) {
+  const h = m.headers ? m.headers.toString("utf8").toLowerCase() : "";
+  if (/x-spam-flag:\s*yes/.test(h) || /x-spam-status:\s*yes/.test(h)) return true;
+  for (const f of ["$junk", "junk", "$phishing"]) if ([...(m.flags || [])].some((x) => x.toLowerCase() === f)) return true;
+  return false;
+}
+
 const dir = (a) => (a ? `${a.name ? a.name + " " : ""}<${a.address || ""}>`.trim() : "");
 function tieneAdjuntos(node) {
   if (!node) return false;
@@ -63,10 +85,7 @@ router.post("/mail/login", async (req, res) => {
   if (!host || !user || !pass) return res.status(400).json({ error: "Faltan servidor, usuario o contraseña" });
   const s = { host: String(host).trim(), port, user: String(user).trim(), pass: String(pass), ultimo: Date.now() };
   try {
-    const carpetas = await conImap(s, async (c) => {
-      const l = await c.list();
-      return l.map((f) => ({ path: f.path, name: f.name, especial: f.specialUse || "" }));
-    });
+    const carpetas = await conImap(s, listarCarpetas);
     const token = randomBytes(24).toString("hex");
     sesiones.set(token, s);
     res.json({ token, user: s.user, carpetas });
@@ -82,8 +101,7 @@ router.get("/mail/folders", async (req, res) => {
   const s = sesionDe(req, res);
   if (!s) return;
   try {
-    const carpetas = await conImap(s, async (c) => (await c.list()).map((f) => ({ path: f.path, name: f.name, especial: f.specialUse || "" })));
-    res.json({ carpetas });
+    res.json({ carpetas: await conImap(s, listarCarpetas) });
   } catch (e) {
     res.status(502).json({ error: e.message });
   }
@@ -121,11 +139,14 @@ router.get("/mail/messages", async (req, res) => {
           rango = `${Math.max(1, fin - PAGINA + 1)}:${fin}`;
         }
         const mensajes = [];
-        for await (const m of c.fetch(rango, { uid: true, envelope: true, flags: true, bodyStructure: true }, opts)) {
+        for await (const m of c.fetch(rango, { uid: true, envelope: true, flags: true, bodyStructure: true, headers: ["x-spam-flag", "x-spam-status"] }, opts)) {
           mensajes.push({
             uid: m.uid,
             asunto: m.envelope?.subject || "(sin asunto)",
             de: dir(m.envelope?.from?.[0]),
+            nombre: m.envelope?.from?.[0]?.name || m.envelope?.from?.[0]?.address || "Desconocido",
+            correo: m.envelope?.from?.[0]?.address || "",
+            spam: esSpam(m),
             fecha: m.envelope?.date || null,
             leido: m.flags?.has("\\Seen") || false,
             adjuntos: tieneAdjuntos(m.bodyStructure),
@@ -175,6 +196,9 @@ router.get("/mail/message", async (req, res) => {
       }
     }
     res.json({
+      spam: /^yes/i.test(String(p.headers?.get("x-spam-flag") || "")) || /^yes/i.test(String(p.headers?.get("x-spam-status") || "")),
+      nombre: p.from?.value?.[0]?.name || p.from?.value?.[0]?.address || "Desconocido",
+      correo: p.from?.value?.[0]?.address || "",
       de: p.from?.text || "",
       para: p.to?.text || "",
       cc: p.cc?.text || "",

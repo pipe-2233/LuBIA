@@ -64,7 +64,19 @@ export async function loadTemplates() {
   }
 }
 
+// Llena el selector de proyecto del formulario. Al editar queda fijo (la plantilla no cambia de proyecto).
+function fillTplProyecto(locked) {
+  const sel = document.getElementById("tpl-proyecto");
+  if (!sel) return;
+  const pid = tplPid();
+  sel.innerHTML =
+    (pid ? "" : '<option value="">Seleccionar proyecto...</option>') +
+    (projects || []).map((p) => `<option value="${p.id}" ${p.id === pid ? "selected" : ""}>${esc(p.name)}</option>`).join("");
+  sel.disabled = !!locked;
+}
+
 export function showTemplateModal(id) {
+  fillTplProyecto(!!id);
   document.getElementById("tpl-id").value = id || "";
   document.getElementById("tpl-name").value = "";
   document.getElementById("tpl-desc").value = "";
@@ -75,6 +87,7 @@ export function showTemplateModal(id) {
 }
 
 export function editTemplate(id, name, desc, cols) {
+  fillTplProyecto(true);
   document.getElementById("tpl-id").value = id;
   document.getElementById("tpl-name").value = name;
   document.getElementById("tpl-desc").value = desc || "";
@@ -84,8 +97,8 @@ export function editTemplate(id, name, desc, cols) {
 }
 
 export async function saveTemplate() {
-  const pid = tplPid();
-  if (!pid) return alert("Selecciona un proyecto primero");
+  const pid = document.getElementById("tpl-proyecto")?.value || tplPid();
+  if (!pid) return alert("Selecciona el proyecto de la plantilla");
   const id = document.getElementById("tpl-id")?.value;
   const name = document.getElementById("tpl-name")?.value.trim();
   if (!name) return alert("Nombre de la plantilla requerido");
@@ -108,7 +121,7 @@ export async function saveTemplate() {
       body: JSON.stringify({ name, description: desc, columns: cols }),
     });
     toggleModal("modal-template");
-    loadTemplates();
+    setTemplatesProject(pid); // el panel muestra el proyecto donde quedó guardada
   } catch (err) {
     alert("Error guardando plantilla: " + err.message);
   }
@@ -121,12 +134,12 @@ export async function delTemplate(id) {
 }
 
 export async function uploadTemplateFile(file) {
-  if (!file || !tplPid()) return;
+  if (!file || !(document.getElementById("tpl-proyecto")?.value || tplPid())) return;
   const f = new FormData();
   f.append("file", file);
 
   try {
-    const r = await fetch(`/api/projects/${tplPid()}/templates/upload`, { method: "POST", body: f });
+    const r = await fetch(`/api/projects/${document.getElementById("tpl-proyecto")?.value || tplPid()}/templates/upload`, { method: "POST", body: f });
     const d = await r.json();
     if (d.columns && d.columns.length) {
       document.getElementById("tpl-columns").value = d.columns.join("\n");

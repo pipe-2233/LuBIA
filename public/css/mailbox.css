@@ -1,31 +1,89 @@
+/* ── Pestañas ── */
 .mail-tabs{display:flex;gap:4px;background:var(--line-3);padding:3px;border-radius:10px}
 .mail-tabs button{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 12px;border:none;border-radius:8px;background:none;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}
 .mail-tabs button .ms{font-size:17px}
 .mail-tabs button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(17,24,39,.12)}
-.mail-user{font-size:12px;color:var(--muted);font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mail-user{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--line-3);padding:5px 10px;border-radius:99px}
 #correos-live{flex:1;min-height:0;display:flex;flex-direction:column}
-.mail-login{max-width:420px;margin:40px auto;width:100%;padding:0 16px}
+
+/* ── Inicio de sesión ── */
+.mail-login{max-width:420px;margin:40px auto;width:calc(100% - 32px);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px;box-shadow:0 8px 30px rgba(17,24,39,.06)}
 .mail-login h2{margin:0 0 6px;font-size:18px}.mail-login p{font-size:12.5px;color:var(--muted);margin:0 0 16px;line-height:1.5}
 .mail-check{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:0 0 14px;color:var(--ink-2)}.mail-check input{accent-color:var(--amber)}
-.mail-box{flex:1;min-height:0;display:grid;grid-template-columns:190px minmax(280px,380px) minmax(0,1fr);gap:1px;background:var(--hair)}
+
+/* ── Layout 3 columnas ── */
+.mail-box{flex:1;min-height:0;display:grid;grid-template-columns:210px minmax(300px,390px) minmax(0,1fr);gap:1px;background:var(--hair)}
 .mail-folders,.mail-list-col,.mail-reader{background:var(--surface);min-height:0;overflow:auto}
-.mail-folders{padding:10px 8px}
-.mail-folder{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border:none;background:none;border-radius:8px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink-2);cursor:pointer;text-align:left}
-.mail-folder .ms{font-size:18px;color:var(--faint)}.mail-folder:hover{background:var(--amber-hover)}
-.mail-folder.on{background:var(--amber-soft);color:var(--amber-text)}.mail-folder.on .ms{color:var(--amber-deep)}
-.mail-item{padding:10px 14px;border-bottom:1px solid var(--line-2);cursor:pointer}
-.mail-item:hover{background:var(--amber-hover)}.mail-item.on{background:var(--amber-soft)}
+.mail-list-col{background:var(--bg)}
+
+/* ── Carpetas ── */
+.mail-folders{padding:12px 10px}
+.mail-folders-t{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:2px 10px 8px}
+.mail-folder{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;margin-bottom:2px;border:none;background:none;border-radius:10px;font:inherit;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;text-align:left;transition:background .12s}
+.mail-folder .ms{font-size:19px;color:var(--faint)}.mail-folder .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mail-folder b{font-size:11px;background:var(--ink);color:#fff;border-radius:99px;padding:1px 7px;font-weight:700}
+.mail-folder:hover{background:var(--line-3)}
+.mail-folder.on{background:var(--amber-soft);color:var(--amber-text)}.mail-folder.on .ms{color:var(--amber-deep)}.mail-folder.on b{background:var(--amber-deep)}
+.mail-folder.spam .ms{color:#DC2626}
+
+/* ── Vistas Principal / Spam ── */
+.mail-views{display:flex;gap:6px;padding:10px 12px;position:sticky;top:0;background:var(--bg);z-index:2;border-bottom:1px solid var(--line-2)}
+.mail-views button{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border:1px solid var(--line);background:var(--surface);border-radius:99px;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}
+.mail-views button .ms{font-size:17px}
+.mail-views button b{font-size:11px;background:var(--line-3);color:var(--ink-2);border-radius:99px;padding:0 7px}
+.mail-views button.on{background:var(--ink);border-color:var(--ink);color:#fff}.mail-views button.on b{background:var(--amber);color:var(--ink)}
+.mail-views button[data-v=spam].on{background:#B91C1C;border-color:#B91C1C}
+
+/* ── Lista ── */
+.mail-av{flex:none;width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;letter-spacing:.02em}
+.mail-av.big{width:46px;height:46px;font-size:16px}
+.mail-item{display:flex;gap:12px;padding:12px 14px;margin:6px 8px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;cursor:pointer;transition:border-color .12s,box-shadow .12s}
+.mail-item:hover{border-color:var(--amber);box-shadow:0 2px 10px rgba(17,24,39,.06)}
+.mail-item.on{border-color:var(--amber);background:var(--amber-soft)}
+.mail-item.es-spam{opacity:.78}
+.mi-body{flex:1;min-width:0;position:relative}
 .mail-item .r1{display:flex;gap:8px;align-items:baseline}
-.mail-item .de{flex:1;min-width:0;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mail-item .de{flex:1;min-width:0;font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mail-item .fe{font-size:11px;color:var(--faint);flex:none}
-.mail-item .as{font-size:12.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
-.mail-item.nuevo .de,.mail-item.nuevo .as{font-weight:700;color:var(--ink)}
-.mail-item .clip{font-size:14px;vertical-align:-3px;color:var(--faint)}
-.mail-reader{display:flex;flex-direction:column;padding:18px 22px}
-.mail-reader h3{margin:0 0 10px;font-size:16px}
-.mail-adj{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
-.mail-adj button{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
+.mail-item .as{font-size:12.5px;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mail-item.nuevo .de,.mail-item.nuevo .as{font-weight:800;color:var(--ink)}
+.mail-item .tags{display:flex;align-items:center;gap:6px;margin-top:4px;min-height:0}
+.mail-item .tags:empty{display:none}
+.mail-item .tags .ms{font-size:15px;color:var(--faint)}
+.mail-item .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);display:inline-block}
+.tag-spam{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#B91C1C;background:#FEE2E2;border-radius:6px;padding:1px 6px}
+.mail-more-wrap{display:flex;justify-content:center;padding:8px 0 16px}
+.mail-more-wrap .btn{display:inline-flex}
+
+/* ── Lector ── */
+.mail-reader{display:flex;flex-direction:column;padding:22px 26px}
+.rd-head{display:flex;gap:14px;align-items:flex-start;padding-bottom:14px;border-bottom:1px solid var(--line-2)}
+.rd-who{min-width:0}
+.rd-who h3{margin:0 0 6px;font-size:18px;line-height:1.3}
+.rd-from{font-size:13px;color:var(--ink-2)}.rd-from span{color:var(--muted)}
+.rd-meta{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--faint);margin-top:3px}.rd-meta .ms{font-size:15px}
+.rd-warn{display:flex;align-items:center;gap:8px;margin-top:12px;padding:9px 12px;border-radius:10px;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;font-size:12.5px;font-weight:600}
+.rd-det{margin-top:10px;font-size:12.5px}.rd-det summary{cursor:pointer;color:var(--muted);font-weight:700;user-select:none}.rd-det[open]{padding-bottom:4px}
+.mail-adj{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.mail-adj button{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;font:inherit;font-size:12.5px;cursor:pointer;max-width:280px;transition:border-color .12s,background .12s}
+.mail-adj button .ms{font-size:20px}.mail-adj .an{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mail-adj small{color:var(--faint);flex:none}.mail-adj .dl{color:var(--faint);font-size:18px}
 .mail-adj button:hover{border-color:var(--amber);background:#FEFCE8}
-.mail-frame{flex:1;min-height:240px;width:100%;border:1px solid var(--line-2);border-radius:8px;background:#fff;margin-top:6px}
-.mail-note{font-size:11.5px;color:var(--faint);margin-top:6px}
-@media(max-width:1000px){.mail-box{grid-template-columns:150px 1fr}.mail-reader{grid-column:1/-1;min-height:360px}}
+.mail-frame{flex:1;min-height:260px;width:100%;border:1px solid var(--line-2);border-radius:12px;background:#fff;margin-top:12px}
+.mail-note{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--faint);margin-top:8px}.mail-note .ms{font-size:15px}
+
+/* ── Estados vacíos ── */
+.mail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:60px 20px;color:var(--faint);text-align:center;flex:1}
+.mail-empty .ms{font-size:44px;opacity:.55}.mail-empty p{margin:0;font-size:13px}
+
+@media(max-width:1000px){.mail-box{grid-template-columns:150px 1fr}.mail-reader{grid-column:1/-1;min-height:380px}}
+
+.mail-views{flex-wrap:wrap}
+.mail-views .mv-cfg{margin-left:auto;padding:0 8px}
+.mail-views .mv-cfg.on{background:var(--amber-soft);border-color:var(--amber);color:var(--amber-text)}
+.mail-dom{margin:8px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.mail-dom p{margin:0 0 8px;font-size:12px;color:var(--muted)}
+.mail-dom-l{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.dchip{display:inline-flex;align-items:center;gap:4px;background:var(--amber-soft);color:var(--amber-text);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700}
+.dchip button{border:none;background:none;cursor:pointer;color:var(--amber-text);font-size:14px;line-height:1;padding:0 0 0 2px}
+.mail-dom-a{display:flex;gap:6px}.mail-dom-a input{flex:1;min-width:0;height:30px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit;font-size:12.5px;background:var(--bg)}

@@ -11,9 +11,26 @@ export function resetSelectedFile() {
   const pc = document.getElementById("preview-content");
   const pt = document.getElementById("preview-transcribe");
   const ph = document.getElementById("file-preview")?.querySelector("p");
-  if (pc) pc.style.display = "none";
+  // Vaciar el contenido detiene audio/iframes y evita que quede el archivo anterior
+  if (pc) { pc.style.display = "none"; pc.innerHTML = ""; }
   if (pt) pt.style.display = "none";
+  for (const id of ["transcript-box", "extract-section", "missing-alert"]) {
+    const e = document.getElementById(id);
+    if (e) e.style.display = "none";
+  }
+  const bn = document.getElementById("banner");
+  if (bn) bn.className = "banner";
   if (ph) ph.style.display = "block";
+  document.querySelectorAll("#file-table .tree-item.selected").forEach((e) => e.classList.remove("selected"));
+}
+
+// Clic en un espacio vacío de la tabla = deja de seleccionar el archivo
+export function initPreviewClearing() {
+  const el = document.getElementById("file-table");
+  if (!el) return;
+  el.addEventListener("click", (e) => {
+    if (!e.target.closest(".tree-item")) resetSelectedFile();
+  });
 }
 
 const MIME_ICONS = {
@@ -51,6 +68,9 @@ export async function loadProjectFiles() {
     const d = await r.json();
     const folders = d.folders || [];
     const files = d.files || [];
+
+    // Si el archivo previsualizado ya no está en la lista, limpiar la vista previa
+    if (selectedFileId && !files.some((f) => f.id === selectedFileId)) resetSelectedFile();
 
     if (folders.length === 0 && files.length === 0) {
       el.innerHTML = '<p style="padding:30px;color:#9CA3AF;text-align:center">Sede vacía. Sube archivos o crea carpetas.</p>';
@@ -112,6 +132,11 @@ export function fileRow(f) {
 }
 
 export function selectFile(id, name, mime, size, date) {
+  // Segundo clic sobre el mismo archivo: deja de seleccionarlo
+  if (selectedFileId === id) {
+    resetSelectedFile();
+    return;
+  }
   selectedFileId = id;
   currentFolderId = null;
   document.querySelectorAll("#file-table .tree-item").forEach((e) => e.classList.remove("selected"));

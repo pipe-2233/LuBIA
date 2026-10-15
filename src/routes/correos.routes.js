@@ -138,6 +138,8 @@ router.post("/correos/archivar", async (req, res) => {
     });
 
     let totalArchivados = 0;
+    let totalFallidos = 0;
+    let totalPendientes = 0;
     let totalBytes = 0;
     console.log(`[Correos] Conectando a ${imapHost}...`);
     await client.connect();
@@ -146,13 +148,16 @@ router.post("/correos/archivar", async (req, res) => {
     for (const f of folderList) {
       try {
         await client.mailboxOpen(f.path);
-        const found = await client.search({ before: corte });
+        // Se trabaja con UID (identificador estable): los números de secuencia se corren al borrar
+        const found = await client.search({ before: corte }, { uid: true });
         if (!found.length) continue;
         console.log(`[Correos] ${f.path}: ${found.length} correos`);
 
-        for (const seq of found.slice(0, 500)) {
+        const lote = found.slice(0, 500);
+        totalPendientes += found.length - lote.length;
+        for (const seq of lote) {
           try {
-            const msg = await client.fetchOne(seq, { envelope: true, source: true });
+            const msg = await client.fetchOne(seq, { envelope: true, source: true }, { uid: true });
             const d = msg.envelope.date || new Date();
             const y = d.getFullYear();
             const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -165,8 +170,12 @@ router.post("/correos/archivar", async (req, res) => {
             writeFileSync(join(dir, fname), msg.source);
             totalArchivados++;
             totalBytes += msg.source.length;
-            if (borrarDespues) await client.messageDelete(seq);
-          } catch {}
+            // Solo se borra del buzón si el archivo ya quedó escrito en disco
+            if (borrarDespues) await client.messageDelete(seq, { uid: true });
+          } catch (e) {
+            totalFallidos++;
+            console.log(`[Correos] Falló UID ${seq} en ${f.path}: ${e.message}`);
+          }
         }
       } catch (e) {
         console.log(`[Correos] Error en ${f.path}: ${e.message}`);
@@ -178,6 +187,8 @@ router.post("/correos/archivar", async (req, res) => {
     res.json({
       totalArchivados,
       espacioEstimadoMB: +(totalBytes / 1024 / 1024).toFixed(1),
+      fallidos: totalFallidos,
+      pendientes: totalPendientes,
       ruta,
     });
   } catch (err) {

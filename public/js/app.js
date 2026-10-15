@@ -33,6 +33,7 @@ import {
   dragOver,
   dragLeave,
   dropOnFolder,
+  initPreviewClearing,
 } from "./files.js";
 import {
   transcribeProjectFile,
@@ -74,6 +75,7 @@ import * as MU from "./muestras.js";
 
 // ── Objeto global LuBIA para compatibilidad completa con HTML ─────
 window.LuBIA = {
+  openTemplates, closeTemplates,
   muLoad: MU.muLoad, muRender: MU.muRender, muFiltroEstado: MU.muFiltroEstado, muSelect: MU.muSelect,
   muAsignar: MU.muAsignar, muAvanzar: MU.muAvanzar, muVincular: MU.muVincular, muAnular: MU.muAnular,
   muLote: MU.muLote, muReiniciar: MU.muReiniciar,
@@ -258,7 +260,29 @@ export function renderCrumbs() {
   }
 }
 
+let navBeforeDrawer = "proyectos";
+export function openTemplates() {
+  const active = document.querySelector(".rail .nav-link.active")?.dataset.nav;
+  if (active && active !== "plantillas") navBeforeDrawer = active;
+  document.body.classList.add("tpl-open");
+  railActive("plantillas");
+  loadTemplates();
+}
+export function closeTemplates() {
+  document.body.classList.remove("tpl-open");
+  railActive(navBeforeDrawer);
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.body.classList.contains("tpl-open")) closeTemplates();
+});
+initPreviewClearing();
+
 export function railNav(nav) {
+  if (nav === "plantillas") {
+    document.body.classList.contains("tpl-open") ? closeTemplates() : openTemplates();
+    return;
+  }
+  if (document.body.classList.contains("tpl-open")) document.body.classList.remove("tpl-open");
   if (nav === "muestras") {
     showSection("muestras");
     railActive("muestras");
@@ -290,16 +314,6 @@ export function railNav(nav) {
     }
   }
 
-  if (nav === "plantillas") {
-    const b = document.querySelector(".block.templates");
-    if (b) {
-      b.classList.remove("flash");
-      void b.offsetWidth;
-      b.classList.add("flash");
-      const side = document.querySelector(".ws-side");
-      if (side) side.scrollLeft = side.scrollWidth;
-    }
-  }
 
   renderCrumbs();
 }

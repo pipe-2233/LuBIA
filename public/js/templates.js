@@ -2,9 +2,12 @@ import { esc, toggleModal } from "./api.js";
 import { currentProject, projects } from "./projects.js";
 
 export async function loadTemplates() {
-  if (!currentProject) return;
   const el = document.getElementById("template-list");
   if (!el) return;
+  if (!currentProject) {
+    el.innerHTML = '<p style="font-size:12px;color:#9CA3AF;text-align:center;padding:12px 0">Abre un proyecto para ver sus plantillas</p>';
+    return;
+  }
 
   try {
     const r = await fetch(`/api/projects/${currentProject.id}/templates`);

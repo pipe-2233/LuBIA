@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/muestras.css">
+  <link rel="stylesheet" href="/css/drawer.css">
 </head>
 <body>
 <div id="app-wrapper">
@@ -133,24 +134,6 @@
                 <div class="panel-actions">
                   <button class="btn btn-outline btn-xs" onclick="window.LuBIA.newFolderInSede()" id="btn-folder" disabled>
                     <span class="ms">create_new_folder</span>Carpeta
-                  </button>
-                </div>
-              </div>
-
-              <div class="block templates">
-                <div class="panel-head">
-                  <span class="label">Plantillas</span>
-                  <div class="spacer"></div>
-                  <button class="btn btn-dashed btn-xs" onclick="window.LuBIA.showTemplateModal()">
-                    <span class="ms">add</span>Nueva
-                  </button>
-                </div>
-                <div id="template-list" class="panel-scroll">
-                  <p style="font-size:12px;color:#9CA3AF;text-align:center;padding:12px 0">Cargando...</p>
-                </div>
-                <div class="panel-actions">
-                  <button class="btn btn-outline btn-xs" onclick="window.LuBIA.showImportModal()">
-                    <span class="ms">download</span>Importar plantilla
                   </button>
                 </div>
               </div>
@@ -323,6 +306,28 @@
     <button class="btn btn-primary" onclick="window.LuBIA.crearProyecto()">Crear Proyecto</button>
   </div>
 </div>
+
+<div id="tpl-backdrop" class="drawer-backdrop" onclick="window.LuBIA.closeTemplates()"></div>
+<aside id="tpl-drawer" class="drawer" aria-label="Plantillas">
+              <div class="block templates">
+                <div class="panel-head">
+                  <span class="label">Plantillas</span>
+                  <div class="spacer"></div>
+                  <button class="btn btn-dashed btn-xs" onclick="window.LuBIA.showTemplateModal()">
+                    <span class="ms">add</span>Nueva
+                  </button>
+                  <button class="btn btn-ghost btn-xs" onclick="window.LuBIA.closeTemplates()" title="Cerrar"><span class="ms">close</span></button>
+                </div>
+                <div id="template-list" class="panel-scroll">
+                  <p style="font-size:12px;color:#9CA3AF;text-align:center;padding:12px 0">Abre un proyecto para ver sus plantillas</p>
+                </div>
+                <div class="panel-actions">
+                  <button class="btn btn-outline btn-xs" onclick="window.LuBIA.showImportModal()">
+                    <span class="ms">download</span>Importar plantilla
+                  </button>
+                </div>
+              </div>
+</aside>
 
 <!-- Modal: Configuración -->
 <div class="modal-overlay" id="modal-settings">

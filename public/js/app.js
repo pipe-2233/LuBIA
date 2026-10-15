@@ -33,6 +33,7 @@ import {
   dragOver,
   dragLeave,
   dropOnFolder,
+  initPreviewClearing,
 } from "./files.js";
 import {
   transcribeProjectFile,
@@ -56,6 +57,7 @@ import {
 } from "./chat.js";
 import {
   loadTemplates,
+  setTemplatesProject,
   showTemplateModal,
   editTemplate,
   saveTemplate,
@@ -70,9 +72,16 @@ import {
   previewCorreo,
   archivarCorreos,
 } from "./correos.js";
+import * as MU from "./muestras.js";
+import * as MAIL from "./mailbox.js";
 
 // ── Objeto global LuBIA para compatibilidad completa con HTML ─────
 window.LuBIA = {
+  mailTab: MAIL.mailTab, mailLogin: MAIL.mailLogin, mailLogout: MAIL.mailLogout, mailBuscar: MAIL.mailBuscar, mailRefrescar: MAIL.mailRefrescar, mailMas: MAIL.mailMas,
+  openTemplates, closeTemplates,
+  muLoad: MU.muLoad, muRender: MU.muRender, muFiltroEstado: MU.muFiltroEstado, muSelect: MU.muSelect,
+  muAsignar: MU.muAsignar, muAvanzar: MU.muAvanzar, muVincular: MU.muVincular, muAnular: MU.muAnular,
+  muLote: MU.muLote, muReiniciar: MU.muReiniciar,
   // Proyectos y sedes
   loadProjects,
   renderHome,
@@ -126,6 +135,7 @@ window.LuBIA = {
 
   // Plantillas
   loadTemplates,
+  setTemplatesProject,
   showTemplateModal,
   editTemplate,
   saveTemplate,
@@ -209,7 +219,10 @@ export function showSection(section) {
   const vc = document.getElementById("view-correos");
   if (vp) vp.style.display = section === "proyectos" ? "block" : "none";
   if (vc) vc.style.display = section === "correos" ? "block" : "none";
-  if (section === "correos") browseCorreos();
+  const vm = document.getElementById("view-muestras");
+  if (vm) vm.style.display = section === "muestras" ? "block" : "none";
+  if (section === "correos") { if (!window.__mailIniciado) { window.__mailIniciado = true; MAIL.mailInit(); } }
+  if (section === "muestras") MU.muLoad();
 }
 
 export function railActive(nav) {
@@ -251,7 +264,34 @@ export function renderCrumbs() {
   }
 }
 
+let navBeforeDrawer = "proyectos";
+export function openTemplates() {
+  const active = document.querySelector(".rail .nav-link.active")?.dataset.nav;
+  if (active && active !== "plantillas") navBeforeDrawer = active;
+  document.body.classList.add("tpl-open");
+  railActive("plantillas");
+  loadTemplates();
+}
+export function closeTemplates() {
+  document.body.classList.remove("tpl-open");
+  railActive(navBeforeDrawer);
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.body.classList.contains("tpl-open")) closeTemplates();
+});
+initPreviewClearing();
+
 export function railNav(nav) {
+  if (nav === "plantillas") {
+    document.body.classList.contains("tpl-open") ? closeTemplates() : openTemplates();
+    return;
+  }
+  if (document.body.classList.contains("tpl-open")) document.body.classList.remove("tpl-open");
+  if (nav === "muestras") {
+    showSection("muestras");
+    railActive("muestras");
+    return;
+  }
   if (nav === "correos") {
     showSection("correos");
     railActive("correos");
@@ -278,16 +318,6 @@ export function railNav(nav) {
     }
   }
 
-  if (nav === "plantillas") {
-    const b = document.querySelector(".block.templates");
-    if (b) {
-      b.classList.remove("flash");
-      void b.offsetWidth;
-      b.classList.add("flash");
-      const side = document.querySelector(".ws-side");
-      if (side) side.scrollLeft = side.scrollWidth;
-    }
-  }
 
   renderCrumbs();
 }

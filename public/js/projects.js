@@ -115,6 +115,7 @@ export function openProject(id) {
 }
 
 export function goHome() {
+  resetSelectedFile();
   currentProject = null;
   currentSedeId = null;
   currentSedeName = "";
@@ -169,6 +170,7 @@ export async function selectSede(id, name) {
     currentSedeId = null;
     currentSedeName = "";
     document.getElementById("btn-folder").disabled = true;
+    resetSelectedFile();
     document.getElementById("file-table").innerHTML =
       '<p style="padding:30px;color:#9CA3AF;text-align:center">Selecciona una sede para ver sus archivos</p>';
     loadSedes();
@@ -179,6 +181,7 @@ export async function selectSede(id, name) {
 
   currentSedeId = id;
   currentSedeName = name;
+  resetSelectedFile();
   document.getElementById("btn-folder").disabled = false;
   loadSedes();
   loadProjectFiles();

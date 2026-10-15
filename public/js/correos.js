@@ -112,7 +112,9 @@ export async function archivarCorreos() {
     } else {
       if (el) {
         el.className = "banner success";
-        el.innerHTML = `✅ ${d.totalArchivados} correos archivados (${d.espacioEstimadoMB} MB)`;
+        el.innerHTML = `✅ ${d.totalArchivados} correos archivados (${d.espacioEstimadoMB} MB)` +
+          (d.fallidos ? ` · ⚠️ ${d.fallidos} fallaron` : "") +
+          (d.pendientes ? ` · ${d.pendientes} pendientes: vuelve a ejecutar` : "");
       }
       setTimeout(() => browseCorreos(), 1200);
     }

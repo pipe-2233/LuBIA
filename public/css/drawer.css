@@ -1,0 +1,19 @@
+.drawer-backdrop{position:fixed;inset:0;background:rgba(17,24,39,.35);opacity:0;pointer-events:none;transition:opacity .18s;z-index:900}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);background:var(--surface);box-shadow:-8px 0 30px rgba(17,24,39,.18);transform:translateX(102%);transition:transform .2s ease;z-index:901;display:flex;flex-direction:column;padding:16px}
+.drawer .block.templates{display:flex;flex-direction:column;min-height:0;flex:1}
+.drawer .panel-scroll{flex:1;overflow:auto;max-height:none}
+body.tpl-open .drawer{transform:none}
+body.tpl-open .drawer-backdrop{opacity:1;pointer-events:auto}
+/* Los modales (Nueva plantilla, etc.) deben quedar por encima del panel flotante */
+.modal-overlay{z-index:1000}
+.tpl-proj{margin:4px 0 10px}
+.tpl-proj label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.tpl-proj select{width:100%;height:38px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:13px;font-weight:600;background:var(--bg);color:var(--ink);outline:none;cursor:pointer}
+.tpl-proj select:focus{border-color:var(--amber);background:#fff}
+
+/* Selector de archivo con el estilo de la página */
+.form-group input[type=file]{height:auto;padding:5px;color:var(--muted);font-size:12.5px;cursor:pointer;background:var(--bg);border:1px dashed var(--line)}
+.form-group input[type=file]:hover{border-color:var(--amber);background:#FEFCE8}
+.form-group input[type=file]::file-selector-button{height:28px;margin-right:12px;padding:0 14px;border:none;border-radius:8px;background:var(--amber);color:var(--ink);font:inherit;font-weight:700;font-size:12.5px;cursor:pointer;transition:background .15s}
+.form-group input[type=file]::file-selector-button:hover{background:var(--amber-2)}
+.drawer .panel-head{margin-bottom:10px}

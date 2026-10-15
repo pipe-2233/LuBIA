@@ -1,13 +1,47 @@
 import { esc, toggleModal } from "./api.js";
 import { currentProject, projects } from "./projects.js";
 
+// Proyecto elegido en el selector del panel de plantillas.
+// Mientras no se elija otro, sigue al proyecto abierto.
+let tplProjectId = null;
+let lastOpenId = null;
+
+function tplPid() {
+  const open = currentProject?.id || null;
+  if (open !== lastOpenId) {
+    lastOpenId = open;
+    tplProjectId = null; // al abrir otro proyecto, el panel vuelve a seguirlo
+  }
+  const pid = tplProjectId || open;
+  return pid && (projects || []).some((p) => p.id === pid) ? pid : open;
+}
+
+function renderTplProjectSelect() {
+  const sel = document.getElementById("tpl-project");
+  if (!sel) return;
+  const pid = tplPid();
+  sel.innerHTML =
+    (pid ? "" : '<option value="">Seleccionar proyecto...</option>') +
+    (projects || []).map((p) => `<option value="${p.id}" ${p.id === pid ? "selected" : ""}>${esc(p.name)}</option>`).join("");
+}
+
+export function setTemplatesProject(id) {
+  tplProjectId = id || null;
+  loadTemplates();
+}
+
 export async function loadTemplates() {
-  if (!currentProject) return;
+  renderTplProjectSelect();
   const el = document.getElementById("template-list");
   if (!el) return;
+  const pid = tplPid();
+  if (!pid) {
+    el.innerHTML = '<p style="font-size:12px;color:#9CA3AF;text-align:center;padding:12px 0">Elige un proyecto para ver sus plantillas</p>';
+    return;
+  }
 
   try {
-    const r = await fetch(`/api/projects/${currentProject.id}/templates`);
+    const r = await fetch(`/api/projects/${pid}/templates`);
     const data = await r.json();
 
     if (!data || data.length === 0) {
@@ -30,7 +64,19 @@ export async function loadTemplates() {
   }
 }
 
+// Llena el selector de proyecto del formulario. Al editar queda fijo (la plantilla no cambia de proyecto).
+function fillTplProyecto(locked) {
+  const sel = document.getElementById("tpl-proyecto");
+  if (!sel) return;
+  const pid = tplPid();
+  sel.innerHTML =
+    (pid ? "" : '<option value="">Seleccionar proyecto...</option>') +
+    (projects || []).map((p) => `<option value="${p.id}" ${p.id === pid ? "selected" : ""}>${esc(p.name)}</option>`).join("");
+  sel.disabled = !!locked;
+}
+
 export function showTemplateModal(id) {
+  fillTplProyecto(!!id);
   document.getElementById("tpl-id").value = id || "";
   document.getElementById("tpl-name").value = "";
   document.getElementById("tpl-desc").value = "";
@@ -41,6 +87,7 @@ export function showTemplateModal(id) {
 }
 
 export function editTemplate(id, name, desc, cols) {
+  fillTplProyecto(true);
   document.getElementById("tpl-id").value = id;
   document.getElementById("tpl-name").value = name;
   document.getElementById("tpl-desc").value = desc || "";
@@ -50,7 +97,8 @@ export function editTemplate(id, name, desc, cols) {
 }
 
 export async function saveTemplate() {
-  if (!currentProject) return alert("Selecciona un proyecto primero");
+  const pid = document.getElementById("tpl-proyecto")?.value || tplPid();
+  if (!pid) return alert("Selecciona el proyecto de la plantilla");
   const id = document.getElementById("tpl-id")?.value;
   const name = document.getElementById("tpl-name")?.value.trim();
   if (!name) return alert("Nombre de la plantilla requerido");
@@ -62,8 +110,8 @@ export async function saveTemplate() {
     .filter(Boolean);
 
   const url = id
-    ? `/api/projects/${currentProject.id}/templates/${id}`
-    : `/api/projects/${currentProject.id}/templates`;
+    ? `/api/projects/${pid}/templates/${id}`
+    : `/api/projects/${pid}/templates`;
   const method = id ? "PUT" : "POST";
 
   try {
@@ -73,7 +121,7 @@ export async function saveTemplate() {
       body: JSON.stringify({ name, description: desc, columns: cols }),
     });
     toggleModal("modal-template");
-    loadTemplates();
+    setTemplatesProject(pid); // el panel muestra el proyecto donde quedó guardada
   } catch (err) {
     alert("Error guardando plantilla: " + err.message);
   }
@@ -81,17 +129,17 @@ export async function saveTemplate() {
 
 export async function delTemplate(id) {
   if (!confirm("¿Eliminar plantilla?")) return;
-  await fetch(`/api/projects/${currentProject.id}/templates/${id}`, { method: "DELETE" });
+  await fetch(`/api/projects/${tplPid()}/templates/${id}`, { method: "DELETE" });
   loadTemplates();
 }
 
 export async function uploadTemplateFile(file) {
-  if (!file || !currentProject) return;
+  if (!file || !(document.getElementById("tpl-proyecto")?.value || tplPid())) return;
   const f = new FormData();
   f.append("file", file);
 
   try {
-    const r = await fetch(`/api/projects/${currentProject.id}/templates/upload`, { method: "POST", body: f });
+    const r = await fetch(`/api/projects/${document.getElementById("tpl-proyecto")?.value || tplPid()}/templates/upload`, { method: "POST", body: f });
     const d = await r.json();
     if (d.columns && d.columns.length) {
       document.getElementById("tpl-columns").value = d.columns.join("\n");
@@ -114,7 +162,7 @@ export async function showImportModal() {
   sel.innerHTML =
     '<option value="">Seleccionar proyecto...</option>' +
     projs
-      .filter((p) => p.id !== currentProject?.id)
+      .filter((p) => p.id !== tplPid())
       .map((p) => `<option value="${p.id}">${esc(p.name)}</option>`)
       .join("");
 
@@ -149,7 +197,7 @@ export async function importTemplate() {
   if (!pid || !tid) return alert("Selecciona proyecto y plantilla");
 
   try {
-    await fetch(`/api/projects/${currentProject.id}/templates/import`, {
+    await fetch(`/api/projects/${tplPid()}/templates/import`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sourceProjectId: pid, sourceTemplateId: tid }),

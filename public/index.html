@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/muestras.css">
   <link rel="stylesheet" href="/css/drawer.css">
+  <link rel="stylesheet" href="/css/mailbox.css">
 </head>
 <body>
 <div id="app-wrapper">
@@ -216,18 +217,58 @@
       <!-- ══ SECCIÓN: Correos ═══════════════════════ -->
       <div id="view-correos" style="display:none">
         <div class="view-head">
-          <h1>Archivo de <span>Correos</span></h1>
-          <div class="search">
-            <span class="ms">search</span>
-            <input id="correos-search" placeholder="Buscar por remitente o asunto..." oninput="window.LuBIA.browseCorreos()">
+          <h1>Correos</h1>
+          <div class="mail-tabs">
+            <button id="tab-live" class="on" onclick="window.LuBIA.mailTab('live')"><span class="ms">inbox</span>Buzón</button>
+            <button id="tab-arch" onclick="window.LuBIA.mailTab('arch')"><span class="ms">inventory_2</span>Archivados</button>
           </div>
-          <span id="correos-path" style="font-size:12px;color:#6B7280;font-family:ui-monospace,Menlo,monospace">/</span>
-          <div class="spacer"></div>
-          <button class="btn btn-outline btn-sm" onclick="window.LuBIA.toggleModal('modal-archivar')">
-            <span class="ms">move_to_inbox</span>Archivar
-          </button>
+          <div id="correos-arch-tools" style="display:none;align-items:center;gap:12px;flex:1;min-width:0">
+            <div class="search">
+              <span class="ms">search</span>
+              <input id="correos-search" placeholder="Buscar por remitente o asunto..." oninput="window.LuBIA.browseCorreos()">
+            </div>
+            <span id="correos-path" style="font-size:12px;color:#6B7280;font-family:ui-monospace,Menlo,monospace">/</span>
+            <div class="spacer"></div>
+            <button class="btn btn-outline btn-sm" onclick="window.LuBIA.toggleModal('modal-archivar')">
+              <span class="ms">move_to_inbox</span>Archivar
+            </button>
+          </div>
+          <div id="mail-live-tools" style="display:none;align-items:center;gap:10px;flex:1;min-width:0">
+            <div class="search">
+              <span class="ms">search</span>
+              <input id="mail-q" placeholder="Buscar por asunto, remitente o destinatario..." onkeydown="if(event.key==='Enter')window.LuBIA.mailBuscar()">
+            </div>
+            <div class="spacer"></div>
+            <span id="mail-user" class="mail-user"></span>
+            <button class="btn btn-outline btn-sm" onclick="window.LuBIA.mailRefrescar()" title="Actualizar"><span class="ms">refresh</span></button>
+            <button class="btn btn-outline btn-sm" onclick="window.LuBIA.mailLogout()"><span class="ms">logout</span>Cerrar sesión</button>
+          </div>
         </div>
-        <div class="correos-grid">
+
+        <!-- Buzón en vivo -->
+        <div id="correos-live">
+          <div id="mail-login" class="mail-login">
+            <h2>Conectar mi correo</h2>
+            <p>Inicia sesión para ver tus correos aquí. La contraseña solo se guarda en la memoria del servidor mientras la sesión está abierta; no se escribe en disco y no se modifica nada del buzón.</p>
+            <div class="form-group"><label>Servidor IMAP</label><input id="mail-host" placeholder="mail.ingelubsa.com" autocomplete="off"></div>
+            <div class="form-group"><label>Usuario</label><input id="mail-usr" placeholder="correo@ingelubsa.com" autocomplete="username"></div>
+            <div class="form-group"><label>Contraseña</label><input id="mail-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')window.LuBIA.mailLogin()"></div>
+            <label class="mail-check"><input type="checkbox" id="mail-remember" checked> Recordar servidor y usuario (nunca la contraseña)</label>
+            <button class="btn btn-primary" id="mail-login-btn" onclick="window.LuBIA.mailLogin()"><span class="ms">login</span>Iniciar sesión</button>
+            <div id="mail-login-msg" class="banner" style="margin-top:12px"></div>
+          </div>
+          <div id="mail-box" class="mail-box" style="display:none">
+            <div id="mail-folders" class="mail-folders"></div>
+            <div class="mail-list-col">
+              <div id="mail-list"></div>
+              <button id="mail-more" class="btn btn-outline btn-sm" style="display:none;margin:10px auto" onclick="window.LuBIA.mailMas()">Cargar más antiguos</button>
+            </div>
+            <div id="mail-reader" class="mail-reader"><p class="mu-empty">Selecciona un correo para leerlo</p></div>
+          </div>
+        </div>
+
+        <!-- Correos archivados (función existente) -->
+        <div class="correos-grid" id="correos-archivo" style="display:none">
           <div id="correos-tree">
             <p style="padding:20px;color:#9CA3AF;text-align:center;font-size:12.5px">Configura la ruta del disco en Configuración</p>
           </div>

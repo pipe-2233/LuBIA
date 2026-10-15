@@ -73,9 +73,11 @@ import {
   archivarCorreos,
 } from "./correos.js";
 import * as MU from "./muestras.js";
+import * as MAIL from "./mailbox.js";
 
 // ── Objeto global LuBIA para compatibilidad completa con HTML ─────
 window.LuBIA = {
+  mailTab: MAIL.mailTab, mailLogin: MAIL.mailLogin, mailLogout: MAIL.mailLogout, mailBuscar: MAIL.mailBuscar, mailRefrescar: MAIL.mailRefrescar, mailMas: MAIL.mailMas,
   openTemplates, closeTemplates,
   muLoad: MU.muLoad, muRender: MU.muRender, muFiltroEstado: MU.muFiltroEstado, muSelect: MU.muSelect,
   muAsignar: MU.muAsignar, muAvanzar: MU.muAvanzar, muVincular: MU.muVincular, muAnular: MU.muAnular,
@@ -219,7 +221,7 @@ export function showSection(section) {
   if (vc) vc.style.display = section === "correos" ? "block" : "none";
   const vm = document.getElementById("view-muestras");
   if (vm) vm.style.display = section === "muestras" ? "block" : "none";
-  if (section === "correos") browseCorreos();
+  if (section === "correos") { if (!window.__mailIniciado) { window.__mailIniciado = true; MAIL.mailInit(); } }
   if (section === "muestras") MU.muLoad();
 }
 

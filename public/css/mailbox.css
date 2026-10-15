@@ -1,0 +1,31 @@
+.mail-tabs{display:flex;gap:4px;background:var(--line-3);padding:3px;border-radius:10px}
+.mail-tabs button{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 12px;border:none;border-radius:8px;background:none;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}
+.mail-tabs button .ms{font-size:17px}
+.mail-tabs button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(17,24,39,.12)}
+.mail-user{font-size:12px;color:var(--muted);font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#correos-live{flex:1;min-height:0;display:flex;flex-direction:column}
+.mail-login{max-width:420px;margin:40px auto;width:100%;padding:0 16px}
+.mail-login h2{margin:0 0 6px;font-size:18px}.mail-login p{font-size:12.5px;color:var(--muted);margin:0 0 16px;line-height:1.5}
+.mail-check{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:0 0 14px;color:var(--ink-2)}.mail-check input{accent-color:var(--amber)}
+.mail-box{flex:1;min-height:0;display:grid;grid-template-columns:190px minmax(280px,380px) minmax(0,1fr);gap:1px;background:var(--hair)}
+.mail-folders,.mail-list-col,.mail-reader{background:var(--surface);min-height:0;overflow:auto}
+.mail-folders{padding:10px 8px}
+.mail-folder{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border:none;background:none;border-radius:8px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink-2);cursor:pointer;text-align:left}
+.mail-folder .ms{font-size:18px;color:var(--faint)}.mail-folder:hover{background:var(--amber-hover)}
+.mail-folder.on{background:var(--amber-soft);color:var(--amber-text)}.mail-folder.on .ms{color:var(--amber-deep)}
+.mail-item{padding:10px 14px;border-bottom:1px solid var(--line-2);cursor:pointer}
+.mail-item:hover{background:var(--amber-hover)}.mail-item.on{background:var(--amber-soft)}
+.mail-item .r1{display:flex;gap:8px;align-items:baseline}
+.mail-item .de{flex:1;min-width:0;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mail-item .fe{font-size:11px;color:var(--faint);flex:none}
+.mail-item .as{font-size:12.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.mail-item.nuevo .de,.mail-item.nuevo .as{font-weight:700;color:var(--ink)}
+.mail-item .clip{font-size:14px;vertical-align:-3px;color:var(--faint)}
+.mail-reader{display:flex;flex-direction:column;padding:18px 22px}
+.mail-reader h3{margin:0 0 10px;font-size:16px}
+.mail-adj{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.mail-adj button{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
+.mail-adj button:hover{border-color:var(--amber);background:#FEFCE8}
+.mail-frame{flex:1;min-height:240px;width:100%;border:1px solid var(--line-2);border-radius:8px;background:#fff;margin-top:6px}
+.mail-note{font-size:11.5px;color:var(--faint);margin-top:6px}
+@media(max-width:1000px){.mail-box{grid-template-columns:150px 1fr}.mail-reader{grid-column:1/-1;min-height:360px}}

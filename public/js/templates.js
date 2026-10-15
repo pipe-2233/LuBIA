@@ -1,16 +1,47 @@
 import { esc, toggleModal } from "./api.js";
 import { currentProject, projects } from "./projects.js";
 
+// Proyecto elegido en el selector del panel de plantillas.
+// Mientras no se elija otro, sigue al proyecto abierto.
+let tplProjectId = null;
+let lastOpenId = null;
+
+function tplPid() {
+  const open = currentProject?.id || null;
+  if (open !== lastOpenId) {
+    lastOpenId = open;
+    tplProjectId = null; // al abrir otro proyecto, el panel vuelve a seguirlo
+  }
+  const pid = tplProjectId || open;
+  return pid && (projects || []).some((p) => p.id === pid) ? pid : open;
+}
+
+function renderTplProjectSelect() {
+  const sel = document.getElementById("tpl-project");
+  if (!sel) return;
+  const pid = tplPid();
+  sel.innerHTML =
+    (pid ? "" : '<option value="">Seleccionar proyecto...</option>') +
+    (projects || []).map((p) => `<option value="${p.id}" ${p.id === pid ? "selected" : ""}>${esc(p.name)}</option>`).join("");
+}
+
+export function setTemplatesProject(id) {
+  tplProjectId = id || null;
+  loadTemplates();
+}
+
 export async function loadTemplates() {
+  renderTplProjectSelect();
   const el = document.getElementById("template-list");
   if (!el) return;
-  if (!currentProject) {
-    el.innerHTML = '<p style="font-size:12px;color:#9CA3AF;text-align:center;padding:12px 0">Abre un proyecto para ver sus plantillas</p>';
+  const pid = tplPid();
+  if (!pid) {
+    el.innerHTML = '<p style="font-size:12px;color:#9CA3AF;text-align:center;padding:12px 0">Elige un proyecto para ver sus plantillas</p>';
     return;
   }
 
   try {
-    const r = await fetch(`/api/projects/${currentProject.id}/templates`);
+    const r = await fetch(`/api/projects/${pid}/templates`);
     const data = await r.json();
 
     if (!data || data.length === 0) {
@@ -53,7 +84,8 @@ export function editTemplate(id, name, desc, cols) {
 }
 
 export async function saveTemplate() {
-  if (!currentProject) return alert("Selecciona un proyecto primero");
+  const pid = tplPid();
+  if (!pid) return alert("Selecciona un proyecto primero");
   const id = document.getElementById("tpl-id")?.value;
   const name = document.getElementById("tpl-name")?.value.trim();
   if (!name) return alert("Nombre de la plantilla requerido");
@@ -65,8 +97,8 @@ export async function saveTemplate() {
     .filter(Boolean);
 
   const url = id
-    ? `/api/projects/${currentProject.id}/templates/${id}`
-    : `/api/projects/${currentProject.id}/templates`;
+    ? `/api/projects/${pid}/templates/${id}`
+    : `/api/projects/${pid}/templates`;
   const method = id ? "PUT" : "POST";
 
   try {
@@ -84,17 +116,17 @@ export async function saveTemplate() {
 
 export async function delTemplate(id) {
   if (!confirm("¿Eliminar plantilla?")) return;
-  await fetch(`/api/projects/${currentProject.id}/templates/${id}`, { method: "DELETE" });
+  await fetch(`/api/projects/${tplPid()}/templates/${id}`, { method: "DELETE" });
   loadTemplates();
 }
 
 export async function uploadTemplateFile(file) {
-  if (!file || !currentProject) return;
+  if (!file || !tplPid()) return;
   const f = new FormData();
   f.append("file", file);
 
   try {
-    const r = await fetch(`/api/projects/${currentProject.id}/templates/upload`, { method: "POST", body: f });
+    const r = await fetch(`/api/projects/${tplPid()}/templates/upload`, { method: "POST", body: f });
     const d = await r.json();
     if (d.columns && d.columns.length) {
       document.getElementById("tpl-columns").value = d.columns.join("\n");
@@ -117,7 +149,7 @@ export async function showImportModal() {
   sel.innerHTML =
     '<option value="">Seleccionar proyecto...</option>' +
     projs
-      .filter((p) => p.id !== currentProject?.id)
+      .filter((p) => p.id !== tplPid())
       .map((p) => `<option value="${p.id}">${esc(p.name)}</option>`)
       .join("");
 
@@ -152,7 +184,7 @@ export async function importTemplate() {
   if (!pid || !tid) return alert("Selecciona proyecto y plantilla");
 
   try {
-    await fetch(`/api/projects/${currentProject.id}/templates/import`, {
+    await fetch(`/api/projects/${tplPid()}/templates/import`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sourceProjectId: pid, sourceTemplateId: tid }),

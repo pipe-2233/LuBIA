@@ -57,6 +57,7 @@ import {
 } from "./chat.js";
 import {
   loadTemplates,
+  setTemplatesProject,
   showTemplateModal,
   editTemplate,
   saveTemplate,
@@ -132,6 +133,7 @@ window.LuBIA = {
 
   // Plantillas
   loadTemplates,
+  setTemplatesProject,
   showTemplateModal,
   editTemplate,
   saveTemplate,

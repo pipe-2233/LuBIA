@@ -211,6 +211,15 @@ async function abrirMensaje(uid) {
       ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'"><base target="_blank"><style>body{font-family:Arial,sans-serif;font-size:14px;margin:14px;word-wrap:break-word}</style>${m.html}`
       : `<style>body{font-family:Arial,sans-serif;font-size:14px;margin:14px;white-space:pre-wrap}</style>${esc(m.texto)}`;
     el.querySelector("iframe").srcdoc = cuerpo;
+    // El servidor ya lo marcó como leído: reflejarlo en la lista y en el contador de la carpeta
+    const mm = mensajes.find((x) => x.uid === uid);
+    if (mm && !mm.leido) {
+      mm.leido = true;
+      document.querySelector(`.mail-item[data-uid="${uid}"]`)?.classList.remove("nuevo");
+      document.querySelector(`.mail-item[data-uid="${uid}"] .dot`)?.remove();
+      const f = (window.__mailCarpetas || []).find((x) => x.path === carpeta);
+      if (f && f.sinLeer > 0) { f.sinLeer--; pintarCarpetas(window.__mailCarpetas); }
+    }
     el.querySelectorAll(".mail-adj button").forEach((b) => b.addEventListener("click", () => bajarAdjunto(uid, b.dataset.i, b.dataset.n)));
   } catch (e) {
     el.innerHTML = `<div class="mail-empty"><span class="ms" style="color:#EF4444">error</span><p style="color:#EF4444">${esc(e.message)}</p></div>`;
